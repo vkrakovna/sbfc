@@ -1117,7 +1117,7 @@ void InitParam(int argc, char* argv[], data &Data, parameters &Parameters, strin
 	// setting target directory
 	if (output_dir_suff.empty()) output_dir_suff = "";
 	ostringstream outdir_stream;
-	outdir_stream << "SBFC_nvar" << Parameters.n_var << '_' << Parameters.n_step/1000 << "k" << output_dir_suff;
+	outdir_stream << "sbfc_nvar" << Parameters.n_var << '_' << Parameters.n_step/1000 << "k" << output_dir_suff;
 	string output_dir = outdir_stream.str();
 	output_id = path + output_dir + "/" + id + "_" + output_dir;
 	string command = "mkdir \"" + path + output_dir + "\" ";

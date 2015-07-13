@@ -3,6 +3,3 @@ all:
 	
 debug:	
 	g++ -Wall -o sbfcd -g -DDEBUG sbfc.cpp -lgsl -lgslcblas
-	
-test:
-	g++ -Wall -o sbfcu -g -DTEST unit_tests.cpp -lgsl -lgslcblas
