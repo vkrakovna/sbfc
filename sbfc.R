@@ -431,7 +431,8 @@ run_method_cv = function(data, method, n_folds=5) {
 #### Helper functions #####
 
 list_dirs <- function(path=".", pattern=NULL, all.dirs=FALSE, full.names=FALSE, ignore.case=FALSE, dirs_only = TRUE) {
-  # code from http://stackoverflow.com/questions/4749783/how-to-obtain-a-list-of-directories-within-a-directory-like-list-files-but-i
+  # code from http://stackoverflow.com/questions/4749783/
+  # how-to-obtain-a-list-of-directories-within-a-directory-like-list-files-but-i
   # use full.names=TRUE to pass to file.info
   all <- list.files(path, pattern, all.dirs,
                     full.names=TRUE, recursive=FALSE, ignore.case)
@@ -516,7 +517,8 @@ summ = function(info) {
 # for small data sets with 2 classes
 method_name_list = c("bart", "rf", "nb", "cart", "c5.0", "lr", "svm", "lasso")
 method_list = c(bt, rf, nb, ct, c5, lr, sv, ls)
-data_list = c("australian","breast","chess","cleve","corral","crx","diabetes","flare","german","glass2","heart","hepatitis","mofn","pima","vote")
+data_list = c("australian","breast","chess","cleve","corral","crx","diabetes","flare",
+              "german","glass2","heart","hepatitis","mofn","pima","vote")
 cv_list = c(T, T, F, T, T, T, T, T, T, T, T, T, F, T, T) # whether a data set requires cross-validation
 # for small multiclass data sets (with >2 classes)
 method_multi_list = c(rf, nb, ct, c5, sv) # methods that can handle multi-class data

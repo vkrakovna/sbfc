@@ -193,7 +193,8 @@ cube LogLikTermMatrix(const counts &Counts, const nlevels &n_levels, const param
 		for (unsigned i = 0; i < v1; i++) {
 			term_matrix(var1, var1, noise) += lgamma(Counts.var(var1)(i) + alpha/v1) - lgamma(alpha/v1);
 			for (unsigned l = 0; l < m; l++) {
-				term_matrix(var1, var1, sig) += lgamma(Counts.var_y(var1)(i, l) + alpha/(v1*m)) - lgamma(alpha/(v1*m));
+				term_matrix(var1, var1, sig) +=
+				lgamma(Counts.var_y(var1)(i, l) + alpha/(v1*m)) - lgamma(alpha/(v1*m));
 			}
 		}
 
@@ -253,7 +254,7 @@ cube LogLik(const parameters &Parameters, const counts &Counts, const nlevels &n
 		for (unsigned var2 = 0; var2 < n_var; var2++) {
 			for (unsigned group = 0; group <= 1; group++) {
 				assert(abs(loglik_matrix(var1, var2, group) - loglik_matrix(var2, var1, group) -
-					       loglik_matrix(var1, var1, group) + loglik_matrix(var2, var2, group)) < cutoff_equal);
+				loglik_matrix(var1, var1, group) + loglik_matrix(var2, var2, group)) < cutoff_equal);
 			}
 		}
 	}
@@ -266,7 +267,7 @@ void LogPost(cube &logpost_matrix, const parameters &Parameters, const nlevels &
 		for (unsigned var2 = 0; var2 < n_var; var2++) {
 			if (var1 != var2) {
 				logpost_matrix(var1, var2, sig) -= (Parameters.edge_mult + Parameters.yedge_mult) *
-				 									Parameters.scaling / n_levels.y;
+				Parameters.scaling / n_levels.y;
 				logpost_matrix(var1, var2, noise) -= Parameters.edge_mult * Parameters.scaling;
 			} else {
 				logpost_matrix(var1, var2, sig) -= Parameters.yedge_mult * Parameters.scaling / n_levels.y;
