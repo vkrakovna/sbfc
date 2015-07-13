@@ -12,6 +12,7 @@ competitively with state-of-the-art classifiers on low- and high-dimensional dat
 variables and variable interactions, complete with a visualization tool.
 
 Files:
-sbfc.cpp: C++ code for running the SBFC algorithm
 
-sbfc.R: R code for result summarization and visualization
+- sbfc.cpp: C++ code for running the SBFC algorithm
+
+- sbfc.R: R code for result summarization and visualization
