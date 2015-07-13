@@ -10,3 +10,7 @@ among the variables, and set a complexity-penalizing prior on the tree structure
 explore the partition and forest structure space, and combine the predictions using Bayesian model averaging. Our method performs
 competitively with state-of-the-art classifiers on low- and high-dimensional data sets, and provides insight into relevant 
 variables and variable interactions, complete with a visualization tool.
+
+Files:
+sbfc.cpp: C++ code for running the SBFC algorithm
+sbfc.R: R code for result summarization and visualization
