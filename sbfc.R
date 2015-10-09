@@ -65,14 +65,16 @@ output_data = function(data, id, pref, test=T) {
 # produces GraphViz code for a graph for a single MCMC sample
 tree_graph = function(groups, ancestors, i, samples=F, thin=50, ...) {
   if (samples) i = i/thin
-  s = 'digraph G { subgraph cluster_g1 { node [color=blue]; label="Group 1";'
+  s = 'digraph G { subgraph cluster_g1 { 
+      node [colorscheme=blues7, color=6, fontcolor=white, style=filled, fontname=default]; label="Group 1";'
   for (j in ncol(ancestors):1) {
     if(groups[i, j] == 1)
       s = paste0(s, " X", j, ";")
     if(groups[i, j] == 1 && ancestors[i, j] != -1)
       s = paste0(s, " X", ancestors[i, j]+1, "-> X", j, ";")
   }
-  s = paste(s, '} subgraph cluster_g0 { node [color=red]; label="Group 0";')
+  s = paste(s, '} subgraph cluster_g0 { 
+      node [colorscheme=blues7, color=2, style=filled, fontname=default]; label="Group 0";')
   for (j in ncol(ancestors):1) {
     if(groups[i, j] == 0)
       s = paste0(s, " X", j, ";")
@@ -117,28 +119,12 @@ average_tree_graph = function(groups, ancestors, cutoff=0.2, edges_only = F, noi
     fontcolor=rep("black", ncolors)
   }
   
-  s = "strict graph G { node[fontname=default] "  
-  
-  if (colorscheme!="discrete") {
-    for (i in ncolors:1) {
-      for (j in vars) {
-        if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors)) 
-          s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " style=", style,
-                     " fontcolor=", fontcolor[i], " color=", i, "];")
-      }
-    }
-  } else {
+  s = "strict graph G { node[fontname=default] "
+  for (i in ncolors:1) {
     for (j in vars) {
-      if ((freq.group1[j] >= cutoff) & (freq.group0[j] < cutoff)) 
-        s = paste0(s, " ", names[j], "[color=blue];")
-    }
-    for (j in vars) {
-      if ((freq.group1[j] >= cutoff) & (freq.group0[j] >= cutoff)) 
-        s = paste0(s, " ", names[j], "[color=green];")
-    }
-    for (j in vars) {
-      if ((freq.group1[j] < cutoff) & (freq.group0[j] >= cutoff)) 
-        s = paste0(s, " ", names[j], "[color=red];")
+      if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors)) 
+        s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " style=", style,
+                   " fontcolor=", fontcolor[i], " color=", i, "];")
     }
   }
   s = paste(s, ae$s, "}")
