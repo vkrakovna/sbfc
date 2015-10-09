@@ -33,8 +33,10 @@ data_import = function(id, pref, nvar=0, test=T, factor=F, ...) {
       data$TrainX = as.data.frame(lapply(data$TrainX, factor))
     }
   }
-  data$Train = cbind(data$TrainY, data$TrainX)
-  colnames(data$Train)[1]='y'
+  data$Train = as.data.frame(cbind(y = data$TrainY, data$TrainX))
+  if (test) {
+    data$Test = as.data.frame(cbind(y = data$TestY, data$TestX))
+  }
   data
 }
 
@@ -90,7 +92,7 @@ average_tree_graph_edges = function(ancestors, cutoff=0.2, names = paste0("X", 1
     freq.edge = table(ancestors[,j])/nrow(ancestors)
     for (k in 1:length(freq.edge)) {
       if (anc[k] > 0 && freq.edge[k] >= cutoff) {
-        s = paste0(s, " \"", names[anc[k]], "\"-> \"", names[j], "\";")
+        s = paste0(s, " \"", names[anc[k]], "\"-- \"", names[j], "\";")
         edge_nodes = c(edge_nodes, j, anc[k])
       }
     }
@@ -100,21 +102,29 @@ average_tree_graph_edges = function(ancestors, cutoff=0.2, names = paste0("X", 1
 
 # produces GraphViz code for an average graph over a set of MCMC sample graphs
 average_tree_graph = function(groups, ancestors, cutoff=0.2, edges_only = F, noise_singletons=F,
-                              names = paste0("X", 1:ncol(ancestors)), colorscheme="rdylbu", ncolors=7, ...) {
+                              names = paste0("X", 1:ncol(ancestors)), colorscheme="blues", ncolors=7, filled=T, ...) {
   freq.group1 = apply((groups >= 1 & groups < 3), 2, mean)
   freq.group0 = apply((groups == 0 | groups == 3), 2, mean)
   ae = average_tree_graph_edges(ancestors, cutoff, names = names)
   vars = 1:ncol(ancestors)
   if (edges_only) vars = ae$edge_nodes
-  else if (!noise_singletons) vars = unique(c(ae$edge_nodes, which(freq.group1 >= .5)))
+  else if (!noise_singletons) vars = unique(c(ae$edge_nodes, which(freq.group1 >= .2)))
+  if (filled) {
+    style="filled"
+    fontcolor=c(rep("black", floor(ncolors/2)), rep("white", ceiling(ncolors/2)))
+  } else {
+    style="solid"
+    fontcolor=rep("black", ncolors)
+  }
   
-  s = "digraph G { "  
+  s = "strict graph G { node[fontname=default] "  
   
   if (colorscheme!="discrete") {
     for (i in ncolors:1) {
       for (j in vars) {
         if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors)) 
-          s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " color=", i, "];")
+          s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " style=", style,
+                     " fontcolor=", fontcolor[i], " color=", i, "];")
       }
     }
   } else {
@@ -146,10 +156,11 @@ output_tree_graph = function(row=10000, average=F, cutoff=0.2, edges_only=F, ...
   }
   else gv_source = tree_graph(groups, ancestors, row, ...)
   
-  s = paste0("graph_", row, "_cutoff_", cutoff)
+  s = paste0("graph_", row, "_cutoff_", cutoff*100)
   if (edges_only) s = paste0(s, "_edges_only")
   path = gen_path(s, filetype="gv", ...)
   write(gv_source, file = path)
+  system(paste(graphviz_pref, path), intern=TRUE)
 }
 
 #### Graph counts and plots ####
@@ -164,7 +175,7 @@ iteration_plot = function(vector, ylabel, start = 0, end = 1, type="trace", acf_
   }
 }
 
-# plots the log posterior 
+# plots the log posterior
 logpost_plot = function(start=0, end=1, save=F, ...) {
   path = gen_path("LogPost", ...)
   logpost = read.table(path)[,1]
@@ -220,22 +231,23 @@ switch_acc_rate = function(k=10, ...) {
 
 # computes proportion of the samples in which each node/variable is in Group 1
 # plots the first (nvars) variables in decreasing order of proportion
-signal_node_prop = function(save=T, subset=F, thin=50, nvars=20, ...) {
+signal_node_prop = function(save=T, subset=F, thin=50, cutoff=10, label_size=1, ...) {
   groups = read.table(gen_path("Groups", ...))
   n = nrow(groups)
   if (subset) rows = seq(n/5 + 1, n, by=thin)
   else rows = 1:n
   sig_prop = apply(groups[rows,], 2, mean)
+  names(sig_prop) = paste0("X", 1:ncol(groups))
   sort_prop = sort(sig_prop, decreasing=T)
-  barplot(sort_prop[1:nvars], cex.names = .5, ylab="Group 1 proportion", xlab="variable")
+  barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Group 1 proportion", xlab="variable")
   
   if (save) {
     path = gen_path("signal_prop", filetype="png", ...)
     png(path)
-    barplot(sort_prop[1:nvars], cex.names = .5, ylab = "Group 1 proportion", xlab="variable")
+    barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab = "Group 1 proportion", xlab="variable")
     dev.off()
   }
-  sort_prop[1:nvars]
+  sort_prop[1:cutoff]
 } 
 
 # plots the total number of trees of different sizes that appeared in the sample graphs
@@ -293,7 +305,7 @@ edge_freq_plot = function(save=T, ...) {
 # naive Bayes
 nb = function(data, e1071=T, smooth=F) {  
   t = proc.time()
-  testcategory = if(e1071) {
+  testclass = if(e1071) {
     require("e1071")
     laplace=0
     if (smooth) laplace = mean(1/sapply(data$TrainX,nlevels))/nlevels(data$TrainY)
@@ -308,96 +320,139 @@ nb = function(data, e1071=T, smooth=F) {
     }
     levels(data$TrainY)[apply(clas,1,which.max)]
   }
-  accuracy = mean(testcategory==data$TestY)
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
 }
 
 # Random Forest
-rf = function(data) {  
-  require(randomForest)
+rf = function(data, cutoff=10, label_size=1) {  
+  require(ranger)
   t = proc.time()
-  rf = randomForest(y~.,data=data$Train, importance=T)
-  imp_mat = rf$importance
-  imp = imp_mat[,ncol(imp_mat)-1]
-  testcategory = predict(rf, data$TestX)
-  #levels(testcategory) = levels(y)
-  accuracy = mean(testcategory==data$TestY)
+  rf = ranger(y~.,data=data$Train, importance='impurity', write.forest=T)
+  imp = rf$variable.importance
+  names(imp) = paste0("X", 1:ncol(data$TrainX))
+  imp_ranking = sort(imp, decreasing=T)
+  barplot(imp_ranking[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Importance", xlab="variable")
+  testclass = predict(rf, data$TestX)$predictions
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory, importance=sort(imp, decreasing=T))
-  
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass, importance=imp_ranking)
 }
 
 # CART
 ct = function(data) { 
   require(tree)
   t = proc.time()
-  testcategory = predict(tree(y~.,data=data$Train),data$TestX, type="class")
-  accuracy = mean(testcategory==data$TestY)
+  testclass = predict(tree(y~.,data=data$Train),data$TestX, type="class")
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
 }
 
 # BART
-bt = function(data) { 
+bt = function(data, cutoff=10, label_size=1) { 
   require(BayesTree)
   t = proc.time()
-  bart.res = bart(x.train = data$TrainX * 1.0, y.train = data$TrainY, x.test = data$TestX, verbose=F)
-  testcategory = as.factor(round(apply(pnorm(bart.res$yhat.test), 2, mean)))
-  levels(testcategory) = levels(data$TestY)
-  accuracy = mean(testcategory==data$TestY)
+  bart_res = bart(x.train = data$TrainX * 1.0, y.train = data$TrainY, x.test = data$TestX, verbose=F)
+  imp = apply(bart_res$varcount, 2, mean)
+  names(imp) = paste0("V", 1:ncol(data$TrainX))
+  imp_ranking = sort(imp, decreasing=T)
+  barplot(imp_ranking[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Average count", xlab="variable")
+  testclass = as.factor(round(apply(pnorm(bart_res$yhat.test), 2, mean)))
+  levels(testclass) = levels(data$TestY)
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass, importance=imp_ranking)
 }
 
 # logistic regression
 lr = function(data) { 
   t = proc.time()
-  testcategory = as.factor(round(predict(glm(y~.,family=binomial,data$Train),data$TestX,type="response")))
-  levels(testcategory) = levels(data$TestY)
-  accuracy = mean(testcategory==data$TestY)
+  testclass = as.factor(round(predict(glm(y~.,family=binomial,data$Train),data$TestX,type="response")))
+  levels(testclass) = levels(data$TestY)
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
 }
 
 # Lasso (glmnet)
-ls = function(data) { 
+ls = function(data, cutoff=10, label_size=1) { 
   require('glmnet')
   t = proc.time()
   model = cv.glmnet(x=as.matrix(data$TrainX), y=data$TrainY, family="multinomial")
-  testcategory = as.numeric(predict(model, as.matrix(data$TestX), type="class"))
-  accuracy = mean(testcategory==data$TestY)
+  imp = abs(as.matrix(coef(model)[[1]]))[-1]
+  names(imp) = paste0("X", 1:ncol(data$TrainX))
+  imp_ranking = sort(imp, decreasing=T)
+  barplot(imp_ranking[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Coefficient", xlab="variable")
+  testclass = as.numeric(predict(model, as.matrix(data$TestX), type="class"))
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass, importance = imp_ranking)
 }
 
 # Support Vector Machines
 sv = function(data){  
   require("e1071")
   t = proc.time()
-  testcategory = predict(svm(y~.,data=data$Train), data$TestX)
-  accuracy = mean(testcategory==data$TestY)
+  testclass = predict(svm(y~.,data=data$Train), data$TestX)
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
 }
 
 # C.50 (decision tree classifier)
 c5 = function(data) { 
   require("C50")
   t = proc.time()
-  testcategory = predict(C5.0(y~.,data=data$Train), newdata=data$TestX)
-  accuracy = mean(testcategory==data$TestY)
+  testclass = predict(C5.0(y~.,data=data$Train), newdata=data$TestX)
+  accuracy = mean(testclass==data$TestY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testcategory=testcategory)
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
+}
+
+# TAN
+tn = function(data) {
+  require("bnlearn")
+  t = proc.time()
+  train = data$Train[, sapply(data$Train, nlevels) > 1]
+  tan = tree.bayes(x = train, training = 'y')
+  testclass = predict(bn.fit(tan, train, method = "bayes"), data$Test[, sapply(data$Test, nlevels) > 1])
+  accuracy = mean(testclass==data$TestY)
+  runtime = proc.time() - t
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
+}
+
+# Bayesian Network
+bn = function(data) {
+  require("bnlearn")
+  t = proc.time()
+  train = data$Train[, sapply(data$Train, nlevels) > 1]
+  bn_fit = bn.fit(hc(train), train)
+  testclass = predict(bn_fit, node="y", data=data$Test[, sapply(data$Test, nlevels) > 1], method="bayes-lw")
+  accuracy = mean(testclass==data$TestY)
+  runtime = proc.time() - t
+  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
+}
+
+# getting a method function from its name
+method_fun = function(method_name) {
+  if (method_name == "bart") bt
+  else if (method_name == "cart") ct
+  else if (method_name == "c50") c5
+  else if (method_name == "svm") sv
+  else if (method_name == "lasso") ls
+  else if (method_name == "tan") tn
+  else get(method_name)
 }
 
 # run a classification method with cross-validation (for small data sets)
-run_method_cv = function(data, method, n_folds=5) {
+method_cv = function(data, method, n_folds=5) {
   t = proc.time()
   n_units = length(data$TrainY)
   row_shuffle = sample(1:n_units, replace=F)
-  testcategory = as.factor(rep(NA, n_units))
-  levels(testcategory) = levels(data$TrainY)
+  testclass = as.factor(rep(NA, n_units))
+  levels(testclass) = levels(data$TrainY)
   fold_start = 1
   fold_size = floor(n_units / n_folds)
   mod = n_units %% n_folds
@@ -413,17 +468,16 @@ run_method_cv = function(data, method, n_folds=5) {
     datafold$TestX = data$TrainX[test_subset,] 
     datafold$TrainY = data$TrainY[train_subset]
     datafold$TestY = data$TrainY[test_subset]
-    datafold$Train = cbind(datafold$TrainY, datafold$TrainX)
-    colnames(datafold$Train)[1]='y'
-    
-    testcategory[test_subset] = method(datafold)$testcategory
+    datafold$Train = cbind(y = datafold$TrainY, datafold$TrainX)
+    datafold$Test = cbind(y = datafold$TestY, datafold$TestX)  
+    testclass[test_subset] = method(datafold)$testclass
     fold_start = fold_end + 1
   }
   stopifnot(fold_end == n_units)
-  levels(testcategory) = levels(data$TrainY)
-  accuracy = mean(testcategory==data$TrainY)
+  levels(testclass) = levels(data$TrainY)
+  accuracy = mean(testclass==data$TrainY)
   runtime = proc.time() - t
-  list(accuracy = accuracy, testcategory = testcategory, runtime = runtime)
+  list(accuracy = accuracy, testclass = testclass, runtime = runtime)
 }
 
 ################# Results ##########################################
@@ -502,7 +556,7 @@ info_method = function(id, method_name, pref, type="Accuracy") {
   rows = intersect(grep(method_name, files), grep(type, files))
   info = c()
   for (i in rows) {
-    info = c(info, read.table(paste0(path1, "/", files[i]), header=F)[1,1])
+    info = c(info, read.table(paste0(pref, id, "/", files[i]), header=F)[1,1])
   }
   info
 }
@@ -515,14 +569,14 @@ summ = function(info) {
 #### Result tables for UCI data sets ####
 
 # for small data sets with 2 classes
-method_name_list = c("bart", "rf", "nb", "cart", "c5.0", "lr", "svm", "lasso")
-method_list = c(bt, rf, nb, ct, c5, lr, sv, ls)
+method_name_list = c("bart", "rf", "nb", "cart", "c5.0", "lr", "svm", "lasso", "bn")
+method_list = c(bt, rf, nb, ct, c5, lr, sv, ls, tan)
 data_list = c("australian","breast","chess","cleve","corral","crx","diabetes","flare",
               "german","glass2","heart","hepatitis","mofn","pima","vote")
 cv_list = c(T, T, F, T, T, T, T, T, T, T, T, T, F, T, T) # whether a data set requires cross-validation
 # for small multiclass data sets (with >2 classes)
-method_multi_list = c(rf, nb, ct, c5, sv) # methods that can handle multi-class data
-method_name_multi_list = c("rf", "nb", "cart", "c5.0", "svm")
+method_multi_list = c(rf, nb, ct, c5, sv, bn) # methods that can handle multi-class data
+method_name_multi_list = c("rf", "nb", "cart", "c5.0", "svm", "bn")
 data_multi_list = c("glass", "iris", "letter", "lymphography", "satimage", "segment", "shuttle", "soybean", "vehicle", "waveform")
 cv_multi_list = c(T, T, F, T, F, F, F, T, T, F)
 # large data sets with >300 variables
@@ -535,18 +589,18 @@ results_method_data = function(data.list, cv.list, method.list, method.name.list
   for (i in 1:length(data.list)) {
     id = data.list[i]
     data = data_import(id, pref, test = !cv.list[i])
-    data_nb = data_import(id, pref, factor=T, test = !cv.list[i])
+    data_factor = data_import(id, pref, factor=T, test = !cv.list[i])
     for (j in 1:length(method.list)) {
       method = method.list[[j]]
-      if (method.name.list[j] == "nb") { 
-        d = data_nb
+      if (method.name.list[j] %in% c("nb", "bn", "tan")) {
+        d = data_factor
       } else {
         d = data
       }
       if (cv.list[i]) {
-        results[i,j] = run_method_cv(d, method, ...)$accuracy
+        results[i,j] = method_cv(d, method, ...)$accuracy
       } else {
-        results[i,j] = run_method(d)$accuracy
+        results[i,j] = method(d)$accuracy
       }
     }
   }
@@ -560,16 +614,16 @@ results_method_nvar = function(id, cv, method.list, method.name.list, nvar= c(10
   dimnames(results) = list(nvar, method.name.list)
   for (i in 1:length(nvar)) {
     data = data_import(id, pref, nvar=nvar[i], test = !cv)
-    data_nb = data_import(id, pref, nvar=nvar[i], factor=T, test = !cv)
+    data_factor = data_import(id, pref, nvar=nvar[i], factor=T, test = !cv)
     for (j in 1:length(method.list)) {
       method = method.list[[j]]
-      if (method.name.list[j] == "nb") { 
-        d = data_nb
+      if (method.name.list[j] %in% c("nb", "bn", "tan")) {
+        d = data_factor
       } else {
         d = data
       }
       if (cv) {
-        results[i,j] = run_method_cv(d, method, ...)$accuracy
+        results[i,j] = method_cv(d, method, ...)$accuracy
       } else {
         results[i,j] = method(d)$accuracy
       }
@@ -577,4 +631,3 @@ results_method_nvar = function(id, cv, method.list, method.name.list, nvar= c(10
   }
   results
 }
-
