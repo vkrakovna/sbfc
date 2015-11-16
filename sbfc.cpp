@@ -14,13 +14,18 @@
 #include <sstream>
 #include <cmath>
 #include <pthread.h>
+#include <RcppArmadillo.h>
+//#include <Rcpp.h>
+
 
 using namespace arma;
 using namespace std;
+using namespace Rcpp;
 #define lgamma gsl_sf_lngamma
 #define to_vec conv_to<vec>::from
 #define to_svec conv_to<svec>::from
 #define to_uvec conv_to<uvec>::from
+#define to_smat conv_to<smat>::from
 
 const unsigned null_value = 65535;
 const double cutoff_equal = 1e-6;
@@ -784,7 +789,6 @@ void MCMC(field<graph> &Graphs, vec &log_post_prob,
 	log_post_prob.save(output_id + "_LogPost.txt", raw_ascii);
 	switch_acc.save(output_id + "_SwitchAcc_all.txt", raw_ascii);
 	move_times.save(output_id + "_Move_Runtimes.txt", csv_ascii);
-
 }
 
 ///// Classification functions
@@ -998,13 +1002,13 @@ void DataLoad(data &Data, string &path, string (&filenames)[4]) {
 	if (FileExists(path, filenames[0]) && FileExists(path, filenames[1])) {
 		Data.X_train.load(path + filenames[0]);
 		Data.Y_train.load(path + filenames[1]);
+		assert(Data.X_train.n_rows == Data.Y_train.n_rows);
 		cout << "training data loaded" << endl;
 	} else {
 		cout << "Please input the correct training data file names" << endl; 
 		exit(0);
 	}
 
-	assert(Data.X_train.n_rows == Data.Y_train.n_rows);
 	if (FileExists(path, filenames[2])) {
 		Data.X_test.load(path + filenames[2]);
 		cout << "test data loaded" << endl;
@@ -1021,7 +1025,6 @@ void DataLoad(data &Data, string &path, string (&filenames)[4]) {
 		Data.X = Data.X_train;
 		Data.Y = Data.Y_train;
 	}
-
 }
 
 void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
@@ -1199,3 +1202,45 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 #endif
+
+void DataImportR(data &Data, SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY) {
+	if (!Rf_isNull(TrainX) && !Rf_isNull(TrainY)) {
+		NumericMatrix trainX(TrainX);
+		mat X_train(trainX.begin(), trainX.nrow(), trainX.ncol(), false);
+		Data.X_train = to_smat(X_train);
+		NumericVector trainY(TrainY);
+		vec Y_train(trainY.begin(), trainY.size(), false);
+		Data.Y_train = to_svec(Y_train);
+		assert(Data.X_train.n_rows == Data.Y_train.n_rows);
+	} else {
+		Rf_error("Training data missing");
+	}
+	if (!Rf_isNull(TestX)) {
+		NumericMatrix testX(TestX);
+		mat X_test(testX.begin(), testX.nrow(), testX.ncol(), false);
+		Data.X_test = to_smat(X_test);
+		assert(Data.X_test.n_cols == Data.X_train.n_cols);
+		Data.X = join_cols(Data.X_train, Data.X_test);
+		if (!Rf_isNull(TestY)) {
+			NumericVector testY(TestY);
+			vec Y_test(testY.begin(), testY.size(), false);
+			Data.Y_test = to_svec(Y_test);
+			assert(Data.X_test.n_rows == Data.Y_test.n_rows);
+			Data.Y = join_cols(Data.Y_train, Data.Y_test);
+		} else {
+			Data.Y = Data.Y_train;
+		}
+	} else {
+		Data.X = Data.X_train;
+		Data.Y = Data.Y_train;
+	}
+}
+
+// [[Rcpp::export]]
+extern "C" SEXP mainWrapper(SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY) {
+	data Data;
+	DataImportR(Data, TrainX, TrainY, TestX, TestY);
+	parameters Parameters;
+	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);
+	return wrap(0);
+}
