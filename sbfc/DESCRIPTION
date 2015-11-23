@@ -1,11 +1,11 @@
 Package: sbfc
 Type: Package
-Title: What the package does (short line)
+Title: Selective Bayesian Forest Classifier
 Version: 1.0
-Date: 2015-11-16
-Author: Your Name
-Maintainer: Your Name <your@email.com>
-Description: More about what it does (maybe more than one line)
+Date: 2015-11-22
+Author: Anonymous
+Maintainer: Anonymous <anon@email.com>
+Description: SBFC is an MCMC algorithm for simultaneous feature selection and classification. This package allows you to run SBFC, make graphs showing the selected features and feature interactions, and perform other analysis of the results.
 License: GPL (>= 2)
 Imports: Rcpp (>= 0.12.2), RcppArmadillo
 LinkingTo: Rcpp, RcppArmadillo

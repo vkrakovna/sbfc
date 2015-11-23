@@ -1,9 +1,5 @@
 ########## I/O helper functions ###########
 
-paste0 = function(...) {
-  paste(..., sep="")
-}
-
 gen_path = function(output_type, id, dir, pref, samples=F, fold=0, filetype="txt", ...) {
   path = paste0(pref, id, "/", dir, "/")
   if (samples) suff = ""
@@ -55,47 +51,43 @@ output_data = function(data, id, pref, test=T) {
 
 ################ Data structure summaries ######
 
-## required parameters: 
-# data set name/id (id), SBFC output directory (dir), directory path prefix (pref)
 ## required parameters for small data sets that require cross-validation: 
 # which cross-validation fold to examine (fold), whether there is a test set (test)
 
 #### Tree graphs ####
 
 # produces GraphViz code for a graph for a single MCMC sample
-tree_graph = function(groups, ancestors, i, samples=F, thin=50, ...) {
+single_sbfc_graph = function(groups, parents, i, samples=F, thin=50, noise_singletons=F, names=paste0("X", 1:ncol(parents))) {
   if (samples) i = i/thin
-  s = 'digraph G { subgraph cluster_g1 { 
-      node [colorscheme=blues7, color=6, fontcolor=white, style=filled, fontname=default]; label="Group 1";'
-  for (j in ncol(ancestors):1) {
+  s = 'strict graph G { node[fontname=default shape=circle margin=0 fixedsize=true]'
+  for (j in ncol(parents):1) {
     if(groups[i, j] == 1)
-      s = paste0(s, " X", j, ";")
-    if(groups[i, j] == 1 && ancestors[i, j] != -1)
-      s = paste0(s, " X", ancestors[i, j]+1, "-> X", j, ";")
+      s = paste(s, names[j], "[fontcolor=white fillcolor=dodgerblue3];")
   }
-  s = paste(s, '} subgraph cluster_g0 { 
-      node [colorscheme=blues7, color=2, style=filled, fontname=default]; label="Group 0";')
-  for (j in ncol(ancestors):1) {
-    if(groups[i, j] == 0)
-      s = paste0(s, " X", j, ";")
-    if(groups[i, j] == 0 && ancestors[i, j] != -1)
-      s = paste0(s, " X", ancestors[i, j]+1, "-> X", j, ";")
+  s = paste(s, "node[fontcolor=black fillcolor=cadetblue1]")
+  for (j in ncol(parents):1) {
+    if((groups[i, j] == 0) && noise_singletons)
+      s = paste(s, names[j], ";")
   }
-  s = paste(s, "}}")
+  for (j in ncol(parents):1) {
+    if(parents[i, j] != 0)
+      s = paste(s, names[parents[i, j]], "--", names[j], ";")
+  }
+  s = paste(s, "}")
   s
 }
 
 # determines a set of edges to include in the average graph
-average_tree_graph_edges = function(ancestors, cutoff=0.2, names = paste0("X", 1:ncol(ancestors))) {
+average_sbfc_graph_edges = function(parents, cutoff=0.2, names=paste0("X", 1:ncol(parents))) {
   s =""
   edge_nodes = c()
-  for (j in 1:ncol(ancestors)) {
-    anc = sort(unique(ancestors[,j])) + 1
-    freq.edge = table(ancestors[,j])/nrow(ancestors)
+  for (j in 1:ncol(parents)) {
+    par = sort(unique(parents[,j]))
+    freq.edge = table(parents[,j])/nrow(parents)
     for (k in 1:length(freq.edge)) {
-      if (anc[k] > 0 && freq.edge[k] >= cutoff) {
-        s = paste0(s, " \"", names[anc[k]], "\"-- \"", names[j], "\";")
-        edge_nodes = c(edge_nodes, j, anc[k])
+      if (par[k] > 0 && freq.edge[k] >= cutoff) {
+        s = paste(s, names[par[k]], "--", names[j], ";")
+        edge_nodes = c(edge_nodes, j, par[k])
       }
     }
   }
@@ -103,50 +95,54 @@ average_tree_graph_edges = function(ancestors, cutoff=0.2, names = paste0("X", 1
 }
 
 # produces GraphViz code for an average graph over a set of MCMC sample graphs
-average_tree_graph = function(groups, ancestors, cutoff=0.2, edges_only = F, noise_singletons=F,
-                              names = paste0("X", 1:ncol(ancestors)), colorscheme="blues", ncolors=7, filled=T, ...) {
+average_sbfc_graph = function(groups, parents, cutoff=0.2, edges_only=F, noise_singletons=F,
+                              names=paste0("X", 1:ncol(parents)), ...) {
+  ncolors=5
   freq.group1 = apply((groups >= 1 & groups < 3), 2, mean)
   freq.group0 = apply((groups == 0 | groups == 3), 2, mean)
-  ae = average_tree_graph_edges(ancestors, cutoff, names = names)
-  vars = 1:ncol(ancestors)
+  ae = average_sbfc_graph_edges(parents, cutoff, names = names)
+  vars = 1:ncol(parents)
   if (edges_only) vars = ae$edge_nodes
   else if (!noise_singletons) vars = unique(c(ae$edge_nodes, which(freq.group1 >= .2)))
-  if (filled) {
-    style="filled"
-    fontcolor=c(rep("black", floor(ncolors/2)), rep("white", ceiling(ncolors/2)))
-  } else {
-    style="solid"
-    fontcolor=rep("black", ncolors)
-  }
+  fontcolor=c(rep("black", floor(ncolors/2)), rep("white", ceiling(ncolors/2)))
   
-  s = "strict graph G { node[fontname=default] "
+  col = c("aliceblue", "cadetblue1", "deepskyblue", "dodgerblue3", "dodgerblue4")
+  s = "strict graph G { node[fontname=default shape=circle] "
   for (i in ncolors:1) {
     for (j in vars) {
       if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors)) 
-        s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " style=", style,
-                   " fontcolor=", fontcolor[i], " color=", i, "];")
+        s = paste(s, names[j], "[fontcolor=", fontcolor[i], " fillcolor=", col[i], "];")
     }
   }
   s = paste(s, ae$s, "}")
   s
 }
 
-# outputs GraphViz code for a graph
-# required parameters: data set id (id), SBFC output directory (dir), directory path prefix (pref)
-output_tree_graph = function(row=10000, average=F, cutoff=0.2, edges_only=F, ...) {
-  ancestors = read.table(gen_path("Ancestors", ...), sep="")
-  groups = read.table(gen_path("Groups", ...), sep="")
+graphviz_plot = function(gv_source) {
+  require(Rgraphviz)
+  file = tempfile()
+  write(gv_source, file)
+  plot(agread(file))
+}
+
+# plots a sampled MCMC graph or an average of sampled graphs
+sbfc_graph = function(sbfc_result, row=10000, average=F, cutoff=0.2, edges_only=F, ...) {
+  #parents = read.table(gen_path("parents", ...), sep="")
+  #groups = read.table(gen_path("Groups", ...), sep="")
+  parents = sbfc_result$parents
+  groups = sbfc_result$groups
   if (average) {
-    gv_source = average_tree_graph(groups, ancestors, cutoff, edges_only, ...)
+    gv_source = average_sbfc_graph(groups, parents, cutoff, edges_only, ...)
     row = "average"
   }
-  else gv_source = tree_graph(groups, ancestors, row, ...)
-  
-  s = paste0("graph_", row, "_cutoff_", cutoff*100)
-  if (edges_only) s = paste0(s, "_edges_only")
-  path = gen_path(s, filetype="gv", ...)
-  write(gv_source, file = path)
-  system(paste(graphviz_pref, path), intern=TRUE)
+  else gv_source = single_sbfc_graph(groups, parents, row, ...)
+  graphviz_plot(gv_source)
+  #s = paste0("graph_", row, "_cutoff_", cutoff*100)
+  #if (edges_only) s = paste0(s, "_edges_only")
+  #path = gen_path(s, filetype="gv", ...)
+  #write(gv_source, file = path)
+  #system(paste(graphviz_pref, path), intern=TRUE)
+  gv_source
 }
 
 #### Graph counts and plots ####
@@ -162,26 +158,27 @@ iteration_plot = function(vector, ylabel, start = 0, end = 1, type="trace", acf_
 }
 
 # plots the log posterior
-logpost_plot = function(start=0, end=1, save=F, ...) {
-  path = gen_path("LogPost", ...)
-  logpost = read.table(path)[,1]
-  iteration_plot(logpost, "logpost", start, end, ...)
-  if (save) {
-    path = gen_path(paste(type, "_plot(", start, ",", end,")",sep=""), filetype="png", ...)
-    png(path)
-    iteration_plot(logpost, "logpost", start, end, ...)
-    dev.off()
-  }
+logpost_plot = function(sbfc_result, start=0, end=1, save=F, ...) {
+  #path = gen_path("LogPost", ...)
+  #logpost = read.table(path)[,1]
+  iteration_plot(sbfc_result$logpost, "logpost", start, end, ...)
+#   if (save) {
+#     path = gen_path(paste(type, "_plot(", start, ",", end,")",sep=""), filetype="png", ...)
+#     png(path)
+#     iteration_plot(logpost, "logpost", start, end, ...)
+#     dev.off()
+#   }
 }
 
 # frequency matrix for graph edges
-freq_matrix = function(...) {
-  ancestors = read.table(gen_path("Ancestors", ...), sep="")
-  nvar = ncol(ancestors)
+freq_matrix = function(sbfc_result, ...) {
+  #parents = read.table(gen_path("parents", ...), sep="")
+  parents = sbfc_result$parents
+  nvar = ncol(parents)
   corr = matrix(0, nvar, nvar)
-  for (j in 1:ncol(ancestors)) {
-    anc = sort(unique(ancestors[,j])) + 1
-    freq_edge = table(ancestors[,j])/nrow(ancestors)
+  for (j in 1:ncol(parents)) {
+    anc = sort(unique(parents[,j])) + 1
+    freq_edge = table(parents[,j])/nrow(parents)
     for (k in 1:length(freq_edge)) {
       i = anc[k]
       if (i > 0) {
@@ -194,96 +191,95 @@ freq_matrix = function(...) {
 }
 
 # trace plot of Group 1 size
-signal_size_plot = function(start=0, end=1, save=T, subset=F, thin=50, ...) {
-  groups = read.table(gen_path("Groups", ...))
-  n = nrow(groups)
+signal_size_plot = function(sbfc_result, start=0, end=1, save=T, subset=F, thin=50, ...) {
+  #groups = read.table(gen_path("Groups", ...))
+  n = nrow(sbfc_result$groups)
   if (subset) rows = seq(n/5 + 1, n, by=thin)
   else rows = 1:n
-  ss = apply(groups[rows,], 1, sum)
+  ss = apply(sbfc_result$groups[rows,], 1, sum)
   iteration_plot(ss, "signal group size", start, end, ...)
-  if (save) {
-    path = gen_path(paste("signal_size(", start, ",", end,")", sep=""), filetype="png", ...)
-    png(path)
-    iteration_plot(ss, "signal group size", start, end, ...)
-    dev.off()
-  }
+#   if (save) {
+#     path = gen_path(paste("signal_size(", start, ",", end,")", sep=""), filetype="png", ...)
+#     png(path)
+#     iteration_plot(ss, "signal group size", start, end, ...)
+#     dev.off()
+#   }
 }
 
-# acceptance rate for the switch move
-switch_acc_rate = function(k=10, ...) {
-  switch_acc = read.table(gen_path("SwitchAcc", ...))[,1]
-  mean(switch_acc)/k
-}
+# # acceptance rate for the switch move
+# switch_acc_rate = function(k=10, ...) {
+#   switch_acc = read.table(gen_path("SwitchAcc", ...))[,1]
+#   mean(switch_acc)/k
+# }
 
 # computes proportion of the samples in which each node/variable is in Group 1
 # plots the first (nvars) variables in decreasing order of proportion
-signal_node_prop = function(save=T, subset=F, thin=50, cutoff=10, label_size=1, ...) {
-  groups = read.table(gen_path("Groups", ...))
-  n = nrow(groups)
+signal_node_prop = function(sbfc_result, save=T, subset=F, thin=50, cutoff=10, label_size=1, ...) {
+  #groups = read.table(gen_path("Groups", ...))
+  n = nrow(sbfc_result$groups)
   if (subset) rows = seq(n/5 + 1, n, by=thin)
   else rows = 1:n
-  sig_prop = apply(groups[rows,], 2, mean)
-  names(sig_prop) = paste0("X", 1:ncol(groups))
+  sig_prop = apply(sbfc_result$groups[rows,], 2, mean)
+  names(sig_prop) = paste0("X", 1:ncol(sbfc_result$groups))
   sort_prop = sort(sig_prop, decreasing=T)
   barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Group 1 proportion", xlab="variable")
-  
-  if (save) {
-    path = gen_path("signal_prop", filetype="png", ...)
-    png(path)
-    barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab = "Group 1 proportion", xlab="variable")
-    dev.off()
-  }
+#   if (save) {
+#     path = gen_path("signal_prop", filetype="png", ...)
+#     png(path)
+#     barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab = "Group 1 proportion", xlab="variable")
+#     dev.off()
+#   }
   sort_prop[1:cutoff]
 } 
 
 # plots the total number of trees of different sizes that appeared in the sample graphs
-tree_size_plot = function(save=T, subset=F, thin=50, ...) {
-  trees = read.table(gen_path("Trees", ...))
-  n = nrow(trees)
+tree_size_plot = function(sbfc_result, save=T, subset=F, thin=50, ...) {
+  #trees = read.table(gen_path("Trees", ...))
+  n = nrow(sbfc_result$trees)
   if (subset) rows = seq(n/5 + 1, n, by=thin) # without burnin
   else rows = 1:n
-  sizes = table(unlist(apply(trees[rows,], 1, table)))
+  sizes = table(unlist(apply(sbfc_result$trees[rows,], 1, table)))
   barplot(sizes, log="y", ylab="number of occurrences", xlab="tree size")
-  if (save) {
-    path = gen_path("tree_sizes", filetype="png", ...)
-    png(path)
-    barplot(sizes, log="y", ylab="number of occurrences", xlab="tree size")
-    dev.off()
-  }
+#   if (save) {
+#     path = gen_path("tree_sizes", filetype="png", ...)
+#     png(path)
+#     barplot(sizes, log="y", ylab="number of occurrences", xlab="tree size")
+#     dev.off()
+#   }
 }
 
 # plots density of edges in a given group over the MCMC iterations
-edge_density = function(group, start=0, end=1, save=T, subset=F, thin=50, ...) {
-  groups = read.table(gen_path("Groups", ...))
-  trees = read.table(gen_path("Trees", ...))
-  n = nrow(groups)
+edge_density = function(sbfc_result, group, start=0, end=1, save=T, subset=F, thin=50, ...) {
+  #groups = read.table(gen_path("Groups", ...))
+  #trees = read.table(gen_path("Trees", ...))
+  n = nrow(sbfc_result$groups)
   edge_den = seq(0, 0, length=n)
   for (i in 1:n) {
-    subset = which(groups[i,] == group)
-    treeset = unique(t(trees[i, subset]))
+    subset = which(sbfc_result$groups[i,] == group)
+    treeset = unique(t(sbfc_result$trees[i, subset]))
     if (length(subset) > 1) edge_den[i] = 1 - (length(treeset)-1)/(length(subset)-1)
   }
   iteration_plot(edge_den, paste("edge density in group", group), start, end, ...)
-  if (save) {
-    path = gen_path(paste0("edge_density", group, "(", start, ",", end,")"), filetype="png", ...)
-    png(path)
-    iteration_plot(edge_den, paste("edge density in group", group), start, end, ...)
-    dev.off()
-  } 
+#   if (save) {
+#     path = gen_path(paste0("edge_density", group, "(", start, ",", end,")"), filetype="png", ...)
+#     png(path)
+#     iteration_plot(edge_den, paste("edge density in group", group), start, end, ...)
+#     dev.off()
+#   } 
 }
 
 # scatterplot of edge frequency between pairs of variables vs correlation between those variables in the data set
-edge_freq_plot = function(save=T, ...) {
-  data = data_import(...)
+edge_freq_plot = function(sbfc_result, data, save=T, ...) {
+  #data = data_import(...)
   corr = cor(data$TrainX)-diag(ncol(data$TrainX))
-  freq = freq_matrix(...)
+  freq = freq_matrix(sbfc_result, ...)
   plot(abs(corr), freq)
-  if (save) {
-    path = gen_path("edge_freq_plot", filetype="png", ...)
-    png(path)
-    plot(abs(corr), freq)
-    dev.off()
-  }
+#   if (save) {
+#     path = gen_path("edge_freq_plot", filetype="png", ...)
+#     png(path)
+#     plot(abs(corr), freq)
+#     dev.off()
+#   }
 }
 
 ################ Other classification methods for comparison ###############################
@@ -363,7 +359,7 @@ lr = function(data) {
 }
 
 # Lasso (glmnet)
-ls = function(data, cutoff=10, label_size=1) { 
+la = function(data, cutoff=10, label_size=1) { 
   require('glmnet')
   t = proc.time()
   model = cv.glmnet(x=as.matrix(data$TrainX), y=data$TrainY, family="multinomial")
@@ -427,7 +423,7 @@ method_fun = function(method_name) {
   else if (method_name == "cart") ct
   else if (method_name == "c50") c5
   else if (method_name == "svm") sv
-  else if (method_name == "lasso") ls
+  else if (method_name == "lasso") la
   else if (method_name == "tan") tn
   else get(method_name)
 }
@@ -556,7 +552,7 @@ summ = function(info) {
 
 # for small data sets with 2 classes
 method_name_list = c("bart", "rf", "nb", "cart", "c5.0", "lr", "svm", "lasso", "bn")
-method_list = c(bt, rf, nb, ct, c5, lr, sv, ls, tan)
+method_list = c(bt, rf, nb, ct, c5, lr, sv, la, tan)
 data_list = c("australian","breast","chess","cleve","corral","crx","diabetes","flare",
               "german","glass2","heart","hepatitis","mofn","pima","vote")
 cv_list = c(T, T, F, T, T, T, T, T, T, T, T, T, F, T, T) # whether a data set requires cross-validation

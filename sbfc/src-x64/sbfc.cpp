@@ -1,13 +1,8 @@
-//define GSL_DLL
-
 // [[Rcpp::depends(RcppArmadillo)]]
 //#include <RcppArmadillo.h>
 #include <RcppArmadilloExtensions/sample.h>
 #include <armadillo>
 #include <iostream>
-//#include <gsl/gsl_sf_gamma.h>
-//#include <gsl/gsl_rng.h>
-//#include <gsl/gsl_randist.h>
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
@@ -16,12 +11,10 @@
 #include <sys/timeb.h>
 #include <sstream>
 #include <cmath>
-// #include <pthread.h>
 
 using namespace arma;
 using namespace std;
 using namespace Rcpp;
-//#define lgamma gsl_sf_lngamma
 #define to_vec conv_to<vec>::from
 #define to_svec conv_to<svec>::from
 #define to_uvec conv_to<uvec>::from
@@ -30,7 +23,6 @@ using namespace Rcpp;
 const unsigned null_value = 65535;
 const double cutoff_equal = 1e-6;
 
-//gsl_rng *rng = gsl_rng_alloc(gsl_rng_env_setup());
 typedef std::vector<unsigned> stdvec;
 typedef Cube<unsigned short> scube;
 typedef Mat<unsigned short> smat;
@@ -46,9 +38,9 @@ enum group {
 struct graph {
 	svec Group;
 	svec Tree;
-	svec Ancestor;
-	graph(): Group(), Tree(), Ancestor() {};
-	graph(int n_var): Group(n_var), Tree(n_var), Ancestor(n_var) {};
+	svec Parent;
+	graph(): Group(), Tree(), Parent() {};
+	graph(int n_var): Group(n_var), Tree(n_var), Parent(n_var) {};
 };
 
 struct data {
@@ -86,6 +78,7 @@ struct parameters {
 	unsigned n_var; // number of variables
 	unsigned n_units; // number of units
 	unsigned n_step; // total number of MCMC steps including burnin
+	unsigned n_rows; // number of rows in output matrices
 	unsigned burnin_frac; // (denominator of) fraction of total MCMC steps discarded as burnin
 	unsigned thin; // thinning factor for MCMC samples
 	unsigned n_samples; // number of MCMC samples
@@ -102,15 +95,17 @@ struct parameters {
 struct outputs {
 	smat Groups;
 	smat Trees;
-	smat Ancestors;
+	smat Parents;
 	vec switch_acc;
-	vec logpost_all;
+	vec logpost;
 	vec move_times;
+	mat probs;
+	svec testclass;
 
 	outputs(): move_times(5) {};
 	outputs(unsigned n_var, unsigned n_rows, unsigned n_step): 
-		Groups(n_rows, n_var), Trees(n_rows, n_var), Ancestors(n_rows, n_var), switch_acc(n_step),
-		logpost_all(n_step), move_times(5) {};
+		Groups(n_rows, n_var), Trees(n_rows, n_var), Parents(n_rows, n_var), switch_acc(n_step),
+		logpost(n_rows), move_times(5) {};
 };
 
 ///// Functions for computing the log posterior
@@ -304,36 +299,23 @@ double logsumexp(const vec &logpost) {
 }
 
 double RandUnif() {
-	//return gsl_rng_uniform(rng);
-	return runif(1)[1];
+	return runif(1)[0];
 }
 
 unsigned RandSample(const unsigned n_max) {
 	assert(n_max > 0);
-	return floor(runif(1, 0, n_max)[1]);
-	//IntegerVector sample = Rcpp::RcppArmadillo::sample(seq_len(n_max)-1, 1, false, NULL);
-	//return sample[1];
-	//return gsl_rng_uniform_int(rng, n_max);
+	return floor(runif(1, 0, n_max)[0]);
 }
 
 uvec RandShuffle(unsigned size) {
-	IntegerVector seq = seq_len(size)-1;
+	IntegerVector seq = seq_len(size) - 1;
 	IntegerVector shuffle = Rcpp::RcppArmadillo::sample(seq, size, false, NumericVector::create());
 	return as<uvec>(shuffle); 
-	// unsigned a[size];
-	// for (unsigned i = 0; i < size; i++) a[i] = i;
-	// gsl_ran_shuffle(rng, a, size, sizeof(unsigned));
-	// stdvec v(a, a + sizeof a / sizeof a[0]);
 }
 
 uvec SampleWithoutReplacement(const svec &orig, const unsigned k) {
 	IntegerVector sample = Rcpp::RcppArmadillo::sample(as<IntegerVector>(wrap(orig)), k, false, NumericVector::create());
 	return as<uvec>(sample); 
-	// stdvec src = conv_to<stdvec>::from(orig);
-	// unsigned a[k];
-	// gsl_ran_choose(rng, a, k, &src[0], orig.n_elem, sizeof(unsigned));
-	// stdvec v(a, a + sizeof a / sizeof a[0]);
-	// return to_uvec(v); 
 }
 
 unsigned opp(const unsigned g) {
@@ -365,12 +347,12 @@ unsigned Choose(const vec &logpost) {
 	return index;
 }
 
-void FindRootNode(const svec &Ancestor, const unsigned &node) {
+void FindRootNode(const svec &Parent, const unsigned &node) {
 	unsigned pos = node;
 	int steps = 0;
 
 	while(pos != null_value) {
-		unsigned next = Ancestor(pos);
+		unsigned next = Parent(pos);
 		if(next == null_value) break;
 		pos = next;
 		steps++;
@@ -380,11 +362,11 @@ void FindRootNode(const svec &Ancestor, const unsigned &node) {
 
 unsigned FindRootTree(const graph &Graph, const unsigned &tree_label) {
 	uvec tree_index_set = find(Graph.Tree == tree_label);
-	uvec root_index_set = find(Graph.Ancestor.elem(tree_index_set) == null_value);
+	uvec root_index_set = find(Graph.Parent.elem(tree_index_set) == null_value);
 	assert(root_index_set.n_elem == 1);
 	unsigned root = tree_index_set(root_index_set(0));
 	assert(Graph.Tree(root) == tree_label);
-	assert(Graph.Ancestor(root) == null_value);
+	assert(Graph.Parent(root) == null_value);
 	return root;
 }
 
@@ -395,7 +377,7 @@ double LogPostDiffTree(const graph &Graph, const cube &logpost_matrix, const uns
 
 	for (unsigned i = 0; i < tree_index_set.n_elem; i++) {
 		unsigned j = tree_index_set(i);
-		unsigned par = Graph.Ancestor(j);
+		unsigned par = Graph.Parent(j);
 		if (par == null_value) par = j;
 		diff += logpost_matrix(j, par, opp(tree_group)) - 
 			logpost_matrix(j, par, tree_group);
@@ -409,7 +391,7 @@ double LogPostTree(const graph &Graph, const cube &logpost_matrix, const unsigne
 
 	for (unsigned i = 0; i < tree_index_set.n_elem; i++) {
 		unsigned j = tree_index_set(i);
-		unsigned par = Graph.Ancestor(j);
+		unsigned par = Graph.Parent(j);
 		if (par == null_value) par = j;
 		logpost += logpost_matrix(j, par, group);
 	}
@@ -425,7 +407,7 @@ void MergeTreeLabels(svec &Tree, unsigned chosen_tree_label, unsigned top_tree_l
 	assert(max(Tree) == max_tree_label_old - 1);
 }
 
-void SplitTreeLabels(svec &Tree, const svec &Ancestor, unsigned node, unsigned tree_label) {
+void SplitTreeLabels(svec &Tree, const svec &Parent, unsigned node, unsigned tree_label) {
 	uvec nodes(1);
 	nodes(0) = node;
 	uvec children;
@@ -433,7 +415,7 @@ void SplitTreeLabels(svec &Tree, const svec &Ancestor, unsigned node, unsigned t
 		Tree.elem(nodes).fill(tree_label);
 		children.reset();
 		for (unsigned i = 0; i < nodes.n_elem; i++) {
-			children.insert_rows(children.n_elem, find(Ancestor == nodes(i)));
+			children.insert_rows(children.n_elem, find(Parent == nodes(i)));
 		}
 		nodes = children;
 	}
@@ -441,16 +423,16 @@ void SplitTreeLabels(svec &Tree, const svec &Ancestor, unsigned node, unsigned t
 
 void SplitSubtree(graph &Graph, const unsigned &chosen_node) {
 	svec &Tree = Graph.Tree;
-	svec &Ancestor = Graph.Ancestor;
-	if (Ancestor(chosen_node) != null_value) {
-		SplitTreeLabels(Tree, Ancestor, chosen_node, max(Tree) + 1);
-		Ancestor(chosen_node) = null_value;
+	svec &Parent = Graph.Parent;
+	if (Parent(chosen_node) != null_value) {
+		SplitTreeLabels(Tree, Parent, chosen_node, max(Tree) + 1);
+		Parent(chosen_node) = null_value;
 	}
 }
 
 void MergeSubtree(graph &Graph, const unsigned &chosen_node, const unsigned &parent) {
 	svec &Tree = Graph.Tree;
-	Graph.Ancestor(chosen_node) = parent;
+	Graph.Parent(chosen_node) = parent;
 	if (parent != null_value) {
 		MergeTreeLabels(Tree, Tree(chosen_node), Tree(parent));
 	}
@@ -459,7 +441,7 @@ void MergeSubtree(graph &Graph, const unsigned &chosen_node, const unsigned &par
 double LogPostProb(const graph &Graph, const cube &logpost_matrix, const parameters &Parameters) {
 	double logpost = 0;
 	for(unsigned j = 0; j < Graph.Group.n_elem; j++) {
-		unsigned par = Graph.Ancestor(j);
+		unsigned par = Graph.Parent(j);
 		if(par == null_value) par = j;
 		logpost += logpost_matrix(j, par, Graph.Group(j));
 	}
@@ -472,20 +454,20 @@ void SanityCheck(const graph &Graph) {
 	#ifdef DEBUG
 		const svec &Group = Graph.Group;
 		const svec &Tree = Graph.Tree;
-		const svec &Ancestor = Graph.Ancestor;
+		const svec &Parent = Graph.Parent;
 		assert(Group.n_elem == Tree.n_elem);
-		assert(Ancestor.n_elem == Tree.n_elem);
+		assert(Parent.n_elem == Tree.n_elem);
 		assert(max(Group) <= 1);
 
 		for (unsigned i = 0; i < Tree.n_elem; i++) {
-			if (Ancestor(i) != null_value) {
-				assert(Tree(i) == Tree(Ancestor(i)));
-				assert(Group(i) == Group(Ancestor(i)));
+			if (Parent(i) != null_value) {
+				assert(Tree(i) == Tree(Parent(i)));
+				assert(Group(i) == Group(Parent(i)));
 			} 
 		}
 
-		for(unsigned i = 0; i < Ancestor.n_elem; i++)
-			FindRootNode(Ancestor, i);
+		for(unsigned i = 0; i < Parent.n_elem; i++)
+			FindRootNode(Parent, i);
 
 		svec treelabels = unique(Tree);
 		for(unsigned i = 0; i <= max(Tree); i++) 
@@ -546,23 +528,23 @@ unsigned SwitchRepeat(graph &Graph, const cube &logpost_matrix, const parameters
 
 void Pivot(graph &Graph, const cube &logpost_matrix, const unsigned tree_label) {
 	// pivot a tree to a randomly chosen new root
-	svec &Ancestor = Graph.Ancestor;
-	svec newAncestor = Ancestor;
+	svec &Parent = Graph.Parent;
+	svec newParent = Parent;
 	uvec tree_index_set = find(Graph.Tree == tree_label);
 	unsigned node = tree_index_set(RandSample(tree_index_set.n_elem));
-	if (Ancestor(node) == null_value) return;
+	if (Parent(node) == null_value) return;
 
-	newAncestor(node) = null_value;
+	newParent(node) = null_value;
 	unsigned new_parent = node;
-	unsigned new_child = Ancestor(new_parent);
+	unsigned new_child = Parent(new_parent);
 
 	while(new_child != null_value) {
-		newAncestor(new_child) = new_parent;
+		newParent(new_child) = new_parent;
 		new_parent = new_child;
-		new_child = Ancestor(new_parent);
+		new_child = Parent(new_parent);
 	}
 
-	Graph.Ancestor = newAncestor;
+	Graph.Parent = newParent;
 	SanityCheck(Graph);
 }
 
@@ -617,7 +599,7 @@ void ReassignSubtree(graph &Graph, const cube &logpost_matrix, const parameters 
 	unsigned group1 = Group(chosen_node);
 
 	#ifdef DEBUG
-		unsigned par1 = Graph.Ancestor(chosen_node);
+		unsigned par1 = Graph.Parent(chosen_node);
 		double logpost1 = LogPostProb(Graph, logpost_matrix, Parameters);
 	#endif
 
@@ -688,12 +670,12 @@ graph InitGraph(const parameters &Parameters) {
 			is_root = (group_size == 0) || (-log(RandUnif()) < Parameters.edge_mult * Parameters.scaling);
 
 			if (is_root) {
-				Graph.Ancestor(node) = null_value;
+				Graph.Parent(node) = null_value;
 				Graph.Tree(node) = tree_count;
 				tree_count++;
 			} else {
 				unsigned parent = nodes(group_index_set(RandSample(group_size)));
-				Graph.Ancestor(node) = parent;
+				Graph.Parent(node) = parent;
 				Graph.Tree(node) = Graph.Tree(parent);
 				assert(Graph.Group(parent) == group);
 			}
@@ -701,7 +683,7 @@ graph InitGraph(const parameters &Parameters) {
 
 	} else {
 		Graph.Tree = linspace<svec>(0, n_var - 1, n_var);
-		Graph.Ancestor.fill(null_value);
+		Graph.Parent.fill(null_value);
 		Graph.Group.zeros();
 		if (Parameters.start == "random_groups") {
 			uvec g1_indices = SampleWithoutReplacement(Graph.Tree, floor(n_var*0.5));
@@ -718,15 +700,15 @@ graph TrueModelGraph(const imat &true_model, const unsigned n_var) {
 	svec trueGroup = to_svec(true_model.row(0).t());
 	svec trueTree = to_svec(true_model.row(1).t());
 	unsigned max_tree = max(trueTree);
-	ivec Ancestor = true_model.row(2).t();
-	Ancestor.elem(find(Ancestor == -1)).fill(null_value);
-	svec trueAncestor = to_svec(Ancestor);
+	ivec Parent = true_model.row(2).t();
+	Parent.elem(find(Parent == -1)).fill(null_value);
+	svec trueParent = to_svec(Parent);
 
 	graph trueGraph(n_var);
 	trueGraph.Group.fill(0); 
-	trueGraph.Ancestor.fill(null_value);
+	trueGraph.Parent.fill(null_value);
 	trueGraph.Group.rows(0, n_kernel-1) = trueGroup;
-	trueGraph.Ancestor.rows(0, n_kernel-1) = trueAncestor;
+	trueGraph.Parent.rows(0, n_kernel-1) = trueParent;
 	trueGraph.Tree.rows(0, n_kernel-1) = trueTree;
 	if (n_kernel < n_var) trueGraph.Tree.rows(n_kernel, n_var-1) =
 		linspace<svec>(max_tree+1, n_var-n_kernel+max_tree, n_var-n_kernel);
@@ -737,62 +719,65 @@ graph TrueModelGraph(const imat &true_model, const unsigned n_var) {
 ///// Running MCMC
 
 void MCMC(field<graph> &Graphs, vec &logpost,
-	const data &Data, const cube &logpost_matrix, const parameters &Parameters) {
+	const data &Data, const cube &logpost_matrix, const parameters &Parameters, outputs &Outputs) {
 	timeb t0, t1, t2, t3;
 	vec move_times(5);
 	move_times.zeros();
-	string output_id = Parameters.output_id;
+	//string output_id = Parameters.output_id;
 
-	unsigned n_step = Parameters.n_step;
+	//unsigned n_step = Parameters.n_step;
+	unsigned n_burnin = Parameters.n_step / Parameters.burnin_frac;
+	
 	assert(Graphs.n_elem == Parameters.n_samples);
 	assert(logpost.n_elem == Parameters.n_samples);
-	unsigned n_burnin = n_step / Parameters.burnin_frac;
-	unsigned n_var = Parameters.n_var;
-	unsigned n_rows = Parameters.thin_output?(n_step/Parameters.thin):n_step;
-
+	
+	//unsigned n_var = Parameters.n_var;
+	/*
 	smat Groups(n_rows, n_var);
 	smat Trees(n_rows, n_var);
-	smat Ancestors(n_rows, n_var);
+	smat Parents(n_rows, n_var);
 
 	vec switch_acc(n_step);
-	vec logpost_all(n_step);
+	vec logpost_all(n_step);*/
 
 	graph Graph = InitGraph(Parameters);
 	if (!Data.true_model.is_empty()) {
 		graph TrueGraph = TrueModelGraph(Data.true_model, Parameters.n_var);
 		vec true_logpost(1);
 		true_logpost(0) = LogPostProb(TrueGraph, logpost_matrix, Parameters);
-		true_logpost.save(output_id + "_TrueModelLogPost.txt", csv_ascii);
+		//true_logpost.save(output_id + "_TrueModelLogPost.txt", csv_ascii);
 
 		if (Parameters.start == "true") Graph = TrueGraph;
 	}
 
 	unsigned count = 0, count1 = 0;
-	for(unsigned i = 0; i < n_step; i++) {
+	for(unsigned i = 0; i < Parameters.n_step; i++) {
 		ftime(&t0);
-		switch_acc(i) = SwitchRepeat(Graph, logpost_matrix, Parameters);
+		Outputs.switch_acc(i) = SwitchRepeat(Graph, logpost_matrix, Parameters);
 		ftime(&t1);
 		ReassignSubtree(Graph, logpost_matrix, Parameters);
 		ftime(&t2);
-		logpost_all(i) = LogPostProb(Graph, logpost_matrix, Parameters);
+		//Outputs.logpost_all(i) = LogPostProb(Graph, logpost_matrix, Parameters);
 
 		if (i % Parameters.thin == 0) {
 			if (Parameters.thin_output) {
-				Groups.row(count1) = Graph.Group.t();
-				Trees.row(count1) = Graph.Tree.t();
-				Ancestors.row(count1) = Graph.Ancestor.t();
+				Outputs.Groups.row(count1) = Graph.Group.t();
+				Outputs.Trees.row(count1) = Graph.Tree.t();
+				Outputs.Parents.row(count1) = Graph.Parent.t();
+				Outputs.logpost(count1) = LogPostProb(Graph, logpost_matrix, Parameters);
 				count1++;
 			}
 			if (i >= n_burnin) {
 				Graphs(count) = Graph;
-				logpost(count) = logpost_all(i);
+				//logpost(count) = Outputs.logpost_all(i);
+				logpost(count) = LogPostProb(Graph, logpost_matrix, Parameters);
 				count++;
 			}
 		}
 		if (!Parameters.thin_output) {
-			Groups.row(i) = Graph.Group.t();
-			Trees.row(i) = Graph.Tree.t();
-			Ancestors.row(i) = Graph.Ancestor.t();
+			Outputs.Groups.row(i) = Graph.Group.t();
+			Outputs.Trees.row(i) = Graph.Tree.t();
+			Outputs.Parents.row(i) = Graph.Parent.t();
 		}
 		ftime(&t3);
 
@@ -803,15 +788,18 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 
 	assert(count == Parameters.n_samples);
 	string suff = (Parameters.thin_output)?"":"_all";
-	imat printAncestors = conv_to<imat>::from(Ancestors);
-	printAncestors.elem(find(Ancestors == null_value)).fill(-1);
+	Outputs.Parents += 1;
+	//Outputs.Parents.elem(find(Outputs.Parents == null_value + 1)).fill(0);
+	/*
+	imat printParents = conv_to<imat>::from(Parents);
+	printParents.elem(find(Parents == null_value)).fill(-1);
 	Groups.save(output_id + "_Groups" + suff + ".txt", raw_ascii);
 	Trees.save(output_id + "_Trees" + suff + ".txt", raw_ascii);
-	printAncestors.save(output_id + "_Ancestors" + suff + ".txt", raw_ascii);
+	printParents.save(output_id + "_Parents" + suff + ".txt", raw_ascii);
 	logpost_all.save(output_id + "_LogPost_all.txt", raw_ascii);
 	logpost.save(output_id + "_LogPost.txt", raw_ascii);
 	switch_acc.save(output_id + "_SwitchAcc_all.txt", raw_ascii);
-	move_times.save(output_id + "_Move_Runtimes.txt", csv_ascii);
+	move_times.save(output_id + "_Move_Runtimes.txt", csv_ascii);*/
 }
 
 ///// Classification functions
@@ -832,11 +820,11 @@ vec LogProbY(const graph &Graph, const counts &Counts, const data &Data, const n
 			unsigned var = group1(j);
 			unsigned var_level = Level(Data.X_test(span(test_row, test_row), var), cat(var))(0);
 			double numer, denom;
-			if (Graph.Ancestor(var) == null_value) {
+			if (Graph.Parent(var) == null_value) {
 				numer = Counts.var_y(var)(var_level, y_level) + Counts.var(var)(var_level) * 1.0 / n_units;
 				denom = 1.0 + Counts.y(y_level);
 			} else {
-				unsigned par = Graph.Ancestor(var);
+				unsigned par = Graph.Parent(var);
 				unsigned par_level = Level(Data.X_test(span(test_row, test_row), par), cat(par))(0);
 				unsigned count_edge;
 				if (var < par) count_edge = Counts.var_var_y(var, par)(var_level, par_level, y_level);
@@ -851,8 +839,8 @@ vec LogProbY(const graph &Graph, const counts &Counts, const data &Data, const n
 	return logpost - logsumexp(logpost);
 }
 
-svec Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n_levels, const field<svec> &cat, 
-	const svec &cat_y, const vec &logpost, const data &Data, const parameters &Parameters) {
+void Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n_levels, const field<svec> &cat, 
+	const svec &cat_y, const vec &logpost, const data &Data, const parameters &Parameters, outputs &Outputs) {
 	assert (Graphs.n_elem == logpost.n_elem);
 	unsigned n_test = Data.X_test.n_rows;
 	mat probs(n_test, n_levels.y);
@@ -872,13 +860,14 @@ svec Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n
 		assert(max_index_set.n_elem > 0); // is usually violated in case of infinity errors somewhere
 		testclass(j) = cat_y(max_index_set(0));
 	}
-	probs.save(Parameters.output_id + "_Probabilities.txt", csv_ascii);
-	return testclass;
+	//probs.save(Parameters.output_id + "_Probabilities.txt", csv_ascii);
+	Outputs.probs = probs;
+	Outputs.testclass = testclass;
+	//return testclass;
 }
 
 ///// Running the SBFC algorithm (with or without cross-validation)
-
-svec SBFC(const data &Data, const parameters &Parameters) {
+void SBFC(const data &Data, const parameters &Parameters, outputs &Outputs) {
 	timeb t1, t2, t3, t4, t5;
 	ftime(&t1);
 	field<svec> cat = Categories(Data.X, Parameters.n_var);
@@ -891,9 +880,9 @@ svec SBFC(const data &Data, const parameters &Parameters) {
 	ftime(&t3);
 	field<graph> Graphs(Parameters.n_samples);
 	vec logpost(Parameters.n_samples);
-	MCMC(Graphs, logpost, Data, logpost_matrix, Parameters);
+	MCMC(Graphs, logpost, Data, logpost_matrix, Parameters, Outputs);
 	ftime(&t4);
-	svec testclass = Classify(Graphs, Counts, n_levels, cat, cat_y, logpost, Data, Parameters);
+	Classify(Graphs, Counts, n_levels, cat, cat_y, logpost, Data, Parameters, Outputs);
 	ftime(&t5);
 	vec times(5);
 	times(0) = t2.time - t1.time;
@@ -901,24 +890,25 @@ svec SBFC(const data &Data, const parameters &Parameters) {
 	times(2) = t4.time - t3.time;
 	times(3) = t5.time - t4.time;
 	times(4) = t5.time - t1.time;
-	times.save(Parameters.output_id + "_Runtimes.txt", csv_ascii);
-	return testclass;
+	Outputs.move_times = times;
+	//times.save(Parameters.output_id + "_Runtimes.txt", csv_ascii);
+	//return Outputs.testclass;
 }
 
 struct cv_fold {
 	uvec test_subset;
 	data Data;
 	parameters Parameters;
-	svec output;
+	outputs Outputs;
 };
 
 void *CV_SBFC_fold(void *_fold) {
 	cv_fold &fold = *(cv_fold *) _fold;
-	fold.output = SBFC(fold.Data, fold.Parameters);
+	SBFC(fold.Data, fold.Parameters, fold.Outputs);
 	return NULL;
 }
 
-double CV_SBFC(const data &Data, const parameters &Parameters) {
+double CV_SBFC(const data &Data, const parameters &Parameters, outputs &Outputs) {
 	unsigned n_units = Parameters.n_units;
 	unsigned n_folds = Parameters.n_folds;
 	unsigned fold_size = n_units / n_folds;
@@ -989,11 +979,16 @@ double CV_SBFC(const data &Data, const parameters &Parameters) {
 			}
 		}*/
 
-		testclass.rows(cv_folds[i].test_subset) = cv_folds[i].output;
+		testclass.rows(cv_folds[i].test_subset) = cv_folds[i].Outputs.testclass;
 	}
 
 	assert(fold_start == n_units);
-	testclass.save(Parameters.output_id + "_Predictions.txt", csv_ascii);
+	Outputs.testclass = testclass;
+	//testclass.save(Parameters.output_id + "_Predictions.txt", csv_ascii);
+	Outputs.Parents = cv_folds[0].Outputs.Parents;
+	Outputs.Groups = cv_folds[0].Outputs.Groups;
+	Outputs.Trees = cv_folds[0].Outputs.Trees;
+	Outputs.logpost = cv_folds[0].Outputs.logpost;
 	uvec correct = find(testclass == Data.Y_train);
 	double accuracy = correct.n_elem * 1.0 / Data.Y_train.n_elem;
 	return accuracy;
@@ -1002,12 +997,12 @@ double CV_SBFC(const data &Data, const parameters &Parameters) {
 double RunSBFC(const data &Data, parameters &Parameters, outputs &Outputs) {
 	double accuracy = 0;
 	if (Data.X_test.is_empty()) { // use k-fold cross-validation to compute accuracy
-		accuracy = CV_SBFC(Data, Parameters); 
+		accuracy = CV_SBFC(Data, Parameters, Outputs); 
 	} else { // use test data set to compute accuracy
-		svec testclass = SBFC(Data, Parameters);
-		testclass.save(Parameters.output_id + "_Predictions.txt", csv_ascii);	
+		SBFC(Data, Parameters, Outputs);
+		//testclass.save(Parameters.output_id + "_Predictions.txt", csv_ascii);	
 		if (!Data.Y_test.is_empty()) {
-			uvec correct = find(testclass == Data.Y_test);
+			uvec correct = find(Outputs.testclass == Data.Y_test);
 			accuracy = correct.n_elem * 1.0 / Data.Y_test.n_elem;
 		}
 	} 
@@ -1058,6 +1053,7 @@ void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
 	assert(Parameters.n_var <= n_var);
 	if (Parameters.n_var >=1000) Parameters.thin_output = true;
 	if (Parameters.n_step == 0) Parameters.n_step = max((unsigned)10000, 10 * Parameters.n_var);
+	Parameters.n_rows = Parameters.thin_output?(Parameters.n_step/Parameters.thin):Parameters.n_step;
 	Parameters.n_samples = (Parameters.n_step - Parameters.n_step/Parameters.burnin_frac) / Parameters.thin;
 	Parameters.scaling = log(Parameters.n_var);
 }
@@ -1178,8 +1174,6 @@ void InitParam(int argc, char* argv[], data &Data, parameters &Parameters, strin
 
 #ifndef TEST
 int main(int argc, char* argv[]) {
-	//gsl_rng_set(rng, time(NULL));
-	cerr<<"wtf man"<<endl;
 	data Data;
 	parameters Parameters;
 	outputs Outputs;
@@ -1229,28 +1223,20 @@ int main(int argc, char* argv[]) {
 }
 #endif
 
-void DataImportR(data &Data, SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY) {
-	if (!Rf_isNull(TrainX) && !Rf_isNull(TrainY)) {
-		NumericMatrix trainX(TrainX);
-		mat X_train(trainX.begin(), trainX.nrow(), trainX.ncol(), false);
-		Data.X_train = to_smat(X_train);
-		NumericVector trainY(TrainY);
-		vec Y_train(trainY.begin(), trainY.size(), false);
-		Data.Y_train = to_svec(Y_train);
+void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &TestY) {
+	if ((TrainX != R_NilValue) && (TrainY != R_NilValue)) {
+		Data.X_train = as<smat>(TrainX);
+		Data.Y_train = as<svec>(TrainY);
 		assert(Data.X_train.n_rows == Data.Y_train.n_rows);
 	} else {
 		Rf_error("Training data missing");
 	}
-	if (!Rf_isNull(TestX)) {
-		NumericMatrix testX(TestX);
-		mat X_test(testX.begin(), testX.nrow(), testX.ncol(), false);
-		Data.X_test = to_smat(X_test);
+	if (TestX != R_NilValue) {
+		Data.X_test = as<smat>(TestX);
 		assert(Data.X_test.n_cols == Data.X_train.n_cols);
 		Data.X = join_cols(Data.X_train, Data.X_test);
-		if (!Rf_isNull(TestY)) {
-			NumericVector testY(TestY);
-			vec Y_test(testY.begin(), testY.size(), false);
-			Data.Y_test = to_svec(Y_test);
+		if (TestY != R_NilValue) {
+			Data.Y_test = as<svec>(TestY);
 			assert(Data.X_test.n_rows == Data.Y_test.n_rows);
 			Data.Y = join_cols(Data.Y_train, Data.Y_test);
 		} else {
@@ -1263,12 +1249,24 @@ void DataImportR(data &Data, SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY) {
 }
 
 // [[Rcpp::export]]
-SEXP sbfc(SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY) {
+List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue) {
+  timeb start, end;
+  ftime(&start);
 	data Data;
 	DataImportR(Data, TrainX, TrainY, TestX, TestY);
 	parameters Parameters;
-	outputs Outputs;
 	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);
+	outputs Outputs(Parameters.n_var, Parameters.n_rows, Parameters.n_step);
 	double accuracy = RunSBFC(Data, Parameters, Outputs);
-	return wrap(accuracy);
+	ftime(&end);
+	return List::create(
+	  _["accuracy"] = accuracy,
+	  _["testclass"] = as<IntegerVector>(wrap(Outputs.testclass)),
+	  _["testprobs"] = as<NumericMatrix>(wrap(Outputs.probs)),
+	  _["parents"] = as<IntegerMatrix>(wrap(Outputs.Parents)),
+	  _["groups"] = as<IntegerMatrix>(wrap(Outputs.Groups)),
+	  _["trees"] = as<IntegerMatrix>(wrap(Outputs.Trees)),
+	  _["logpost"] = as<NumericVector>(wrap(Outputs.logpost)),
+	  _["runtime"] = floor(end.time - start.time)
+	);
 }

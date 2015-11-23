@@ -7,7 +7,7 @@
 using namespace Rcpp;
 
 // sbfc
-double sbfc(SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY);
+List sbfc(SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY);
 RcppExport SEXP sbfc_sbfc(SEXP TrainXSEXP, SEXP TrainYSEXP, SEXP TestXSEXP, SEXP TestYSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
