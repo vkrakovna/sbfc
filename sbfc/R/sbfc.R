@@ -1,75 +1,19 @@
-########## I/O helper functions ###########
-
-gen_path = function(output_type, id, dir, pref, samples=F, fold=0, filetype="txt", ...) {
-  path = paste0(pref, id, "/", dir, "/")
-  if (samples) suff = ""
-  else suff = "_all"
-  if (fold > 0) fold_str = paste0("_", fold)
-  else fold_str=""
-  paste(path, id, paste("_", dir, sep=""), fold_str, "_", output_type, suff, ".", filetype, sep = "")
-}
-
-data_import = function(id, pref, nvar=0, test=T, factor=F, ...) {
-  path = paste0(pref, id, "/")
-  data = list()
-  data$TrainX = read.table(paste0(path, "TrainX"))
-  if (nvar > 0) data$TrainX = data$TrainX[,1:nvar]
-  data$TrainY = as.factor(read.table(paste0(path, "TrainY"))[,1])
-  if (test) {
-    data$TestX = read.table(paste0(path, "TestX"))
-    if (nvar > 0) data$TestX = data$TestX[,1:nvar]
-    data$TestY = factor(read.table(paste0(path, "TestY"))[,1], levels(data$TrainY))
-  }
-  if (factor) {
-    if (test) {
-      joined = as.data.frame(lapply(rbind(data$TestX,data$TrainX), factor))
-      data$TrainX = joined[(1+nrow(data$TestX)):nrow(joined),]
-      data$TestX = joined[1:nrow(data$TestX),]
-    } else {
-      data$TrainX = as.data.frame(lapply(data$TrainX, factor))
-    }
-  }
-  data$Train = as.data.frame(cbind(y = data$TrainY, data$TrainX))
-  if (test) {
-    data$Test = as.data.frame(cbind(y = data$TestY, data$TestX))
-  }
-  data
-}
-
-output_data = function(data, id, pref, test=T) {
-  path = paste(pref, id, sep="") 
-  dir.create(file.path(path), showWarnings = F)
-  write.table(data$TrainX, file=paste(path, "/TrainX",sep=""), quote=F, col.names=F, row.names=F)
-  write.table(data$TrainY, file=paste(path, "/TrainY",sep=""), quote=F, col.names=F, row.names=F)
-  if (test) {
-    write.table(data$TestX, file=paste(path, "/TestX",sep=""), quote=F, col.names=F, row.names=F)
-    write.table(data$TestY, file=paste(path, "/TestY",sep=""), quote=F, col.names=F, row.names=F)
-  }
-  if (substr(id, 1, 1) < 2)   
-    write.table(data$tm, file=paste(path, "/TrueModel",sep=""), quote=F, col.names=F, row.names=F)
-}
-
-################ Data structure summaries ######
-
-## required parameters for small data sets that require cross-validation: 
-# which cross-validation fold to examine (fold), whether there is a test set (test)
-
-#### Tree graphs ####
+#### SBFC graphs ####
 
 # produces GraphViz code for a graph for a single MCMC sample
 single_sbfc_graph = function(groups, parents, i, samples=F, thin=50, noise_singletons=F, names=paste0("X", 1:ncol(parents))) {
   if (samples) i = i/thin
-  s = 'strict graph G { node[fontname=default shape=circle margin=0 fixedsize=true]'
-  for (j in ncol(parents):1) {
+  s = 'strict graph G { node[fontname=default shape=circle]'
+  for (j in 1:ncol(parents)) {
     if(groups[i, j] == 1)
       s = paste(s, names[j], "[fontcolor=white fillcolor=dodgerblue3];")
   }
   s = paste(s, "node[fontcolor=black fillcolor=cadetblue1]")
-  for (j in ncol(parents):1) {
+  for (j in 1:ncol(parents)) {
     if((groups[i, j] == 0) && noise_singletons)
       s = paste(s, names[j], ";")
   }
-  for (j in ncol(parents):1) {
+  for (j in 1:ncol(parents)) {
     if(parents[i, j] != 0)
       s = paste(s, names[parents[i, j]], "--", names[j], ";")
   }
@@ -111,7 +55,7 @@ average_sbfc_graph = function(groups, parents, cutoff=0.2, edges_only=F, noise_s
   for (i in ncolors:1) {
     for (j in vars) {
       if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors)) 
-        s = paste(s, names[j], "[fontcolor=", fontcolor[i], " fillcolor=", col[i], "];")
+        s = paste(s, names[j], "[fontcolor=", fontcolor[i], "fillcolor=", col[i], "];")
     }
   }
   s = paste(s, ae$s, "}")
@@ -125,24 +69,40 @@ graphviz_plot = function(gv_source) {
   plot(agread(file))
 }
 
-# plots a sampled MCMC graph or an average of sampled graphs
-sbfc_graph = function(sbfc_result, row=10000, average=F, cutoff=0.2, edges_only=F, ...) {
-  #parents = read.table(gen_path("parents", ...), sep="")
-  #groups = read.table(gen_path("Groups", ...), sep="")
+graphviz_plot1 = function(gv_source) {
+  require(Rgraphviz)
+  require(grImport)
+  require(grid)
+  file = tempfile()
+  file2 = tempfile()
+  file3 = tempfile()
+  write(gv_source, file)
+  # png(file2)
+  toFile(agread(file), filename = file2, fileType = "ps")
+  print(file2)
+  PostScriptTrace(file2,file3)
+  grid.picture(readPicture(file3)[-1])
+  #dev.off()
+  #p = readPNG(file2)
+  #grid.raster(p)
+}
+
+##' @title SBFC graph
+##' @description Plots a sampled MCMC graph or an average of sampled graphs.
+##' @param sbfc_result An object of class \code{sbfc}
+##' @param average Whether to plot an average of sampled MCMC graphs (default=TRUE)
+##' @param iter MCMC iteration of the sampled graph, if \code{average=F} (default=10000)
+##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2)
+##' @param noise_singletons Whether to plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).
+##' @param names Node names for the graph labels (default=\code{c("X1","X2",...)})
+##' @details If the graph renders poorly in the R plot window, try changing the aspect ratio of the plot window.
+##' @export
+sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.2, edges_only=F, ...) {
   parents = sbfc_result$parents
   groups = sbfc_result$groups
-  if (average) {
-    gv_source = average_sbfc_graph(groups, parents, cutoff, edges_only, ...)
-    row = "average"
-  }
-  else gv_source = single_sbfc_graph(groups, parents, row, ...)
+  if (average) gv_source = average_sbfc_graph(groups, parents, edge_cutoff, edges_only, ...)
+  else gv_source = single_sbfc_graph(groups, parents, iter, ...)
   graphviz_plot(gv_source)
-  #s = paste0("graph_", row, "_cutoff_", cutoff*100)
-  #if (edges_only) s = paste0(s, "_edges_only")
-  #path = gen_path(s, filetype="gv", ...)
-  #write(gv_source, file = path)
-  #system(paste(graphviz_pref, path), intern=TRUE)
-  gv_source
 }
 
 #### Graph counts and plots ####
@@ -157,22 +117,15 @@ iteration_plot = function(vector, ylabel, start = 0, end = 1, type="trace", acf_
   }
 }
 
-# plots the log posterior
-logpost_plot = function(sbfc_result, start=0, end=1, save=F, ...) {
-  #path = gen_path("LogPost", ...)
-  #logpost = read.table(path)[,1]
+##' @title Log posterior trace plot
+##' @description Plots the log posterior for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
+##' @export
+logpost_plot = function(sbfc_result, start=0, end=1, ...) {
   iteration_plot(sbfc_result$logpost, "logpost", start, end, ...)
-#   if (save) {
-#     path = gen_path(paste(type, "_plot(", start, ",", end,")",sep=""), filetype="png", ...)
-#     png(path)
-#     iteration_plot(logpost, "logpost", start, end, ...)
-#     dev.off()
-#   }
 }
 
 # frequency matrix for graph edges
 freq_matrix = function(sbfc_result, ...) {
-  #parents = read.table(gen_path("parents", ...), sep="")
   parents = sbfc_result$parents
   nvar = ncol(parents)
   corr = matrix(0, nvar, nvar)
@@ -191,67 +144,39 @@ freq_matrix = function(sbfc_result, ...) {
 }
 
 # trace plot of Group 1 size
-signal_size_plot = function(sbfc_result, start=0, end=1, save=T, subset=F, thin=50, ...) {
-  #groups = read.table(gen_path("Groups", ...))
+signal_size_plot = function(sbfc_result, start=0, end=1, subset=F, thin=50, ...) {
   n = nrow(sbfc_result$groups)
   if (subset) rows = seq(n/5 + 1, n, by=thin)
   else rows = 1:n
   ss = apply(sbfc_result$groups[rows,], 1, sum)
   iteration_plot(ss, "signal group size", start, end, ...)
-#   if (save) {
-#     path = gen_path(paste("signal_size(", start, ",", end,")", sep=""), filetype="png", ...)
-#     png(path)
-#     iteration_plot(ss, "signal group size", start, end, ...)
-#     dev.off()
-#   }
 }
 
-# # acceptance rate for the switch move
-# switch_acc_rate = function(k=10, ...) {
-#   switch_acc = read.table(gen_path("SwitchAcc", ...))[,1]
-#   mean(switch_acc)/k
-# }
-
-# computes proportion of the samples in which each node/variable is in Group 1
-# plots the first (nvars) variables in decreasing order of proportion
-signal_node_prop = function(sbfc_result, save=T, subset=F, thin=50, cutoff=10, label_size=1, ...) {
-  #groups = read.table(gen_path("Groups", ...))
+##' @title Signal variable proportion
+##' @description Computes proportion of the samples in which each variable is in the signal group (Group 1). Plots the first (nvars) variables in decreasing order of proportion.
+##' @export
+signal_var_prop = function(sbfc_result, subset=F, thin=50, nvars=10, label_size=1) {
   n = nrow(sbfc_result$groups)
   if (subset) rows = seq(n/5 + 1, n, by=thin)
   else rows = 1:n
   sig_prop = apply(sbfc_result$groups[rows,], 2, mean)
   names(sig_prop) = paste0("X", 1:ncol(sbfc_result$groups))
   sort_prop = sort(sig_prop, decreasing=T)
-  barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Group 1 proportion", xlab="variable")
-#   if (save) {
-#     path = gen_path("signal_prop", filetype="png", ...)
-#     png(path)
-#     barplot(sort_prop[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab = "Group 1 proportion", xlab="variable")
-#     dev.off()
-#   }
-  sort_prop[1:cutoff]
+  barplot(sort_prop[1:nvars], cex.names = label_size, cex.lab=1.5, ylab="Group 1 proportion", xlab="variable")
+  sort_prop[1:nvars]
 } 
 
 # plots the total number of trees of different sizes that appeared in the sample graphs
-tree_size_plot = function(sbfc_result, save=T, subset=F, thin=50, ...) {
-  #trees = read.table(gen_path("Trees", ...))
+tree_size_plot = function(sbfc_result, subset=F, thin=50, ...) {
   n = nrow(sbfc_result$trees)
   if (subset) rows = seq(n/5 + 1, n, by=thin) # without burnin
   else rows = 1:n
   sizes = table(unlist(apply(sbfc_result$trees[rows,], 1, table)))
   barplot(sizes, log="y", ylab="number of occurrences", xlab="tree size")
-#   if (save) {
-#     path = gen_path("tree_sizes", filetype="png", ...)
-#     png(path)
-#     barplot(sizes, log="y", ylab="number of occurrences", xlab="tree size")
-#     dev.off()
-#   }
 }
 
 # plots density of edges in a given group over the MCMC iterations
-edge_density = function(sbfc_result, group, start=0, end=1, save=T, subset=F, thin=50, ...) {
-  #groups = read.table(gen_path("Groups", ...))
-  #trees = read.table(gen_path("Trees", ...))
+edge_density = function(sbfc_result, group, start=0, end=1, subset=F, thin=50, ...) {
   n = nrow(sbfc_result$groups)
   edge_den = seq(0, 0, length=n)
   for (i in 1:n) {
@@ -260,26 +185,13 @@ edge_density = function(sbfc_result, group, start=0, end=1, save=T, subset=F, th
     if (length(subset) > 1) edge_den[i] = 1 - (length(treeset)-1)/(length(subset)-1)
   }
   iteration_plot(edge_den, paste("edge density in group", group), start, end, ...)
-#   if (save) {
-#     path = gen_path(paste0("edge_density", group, "(", start, ",", end,")"), filetype="png", ...)
-#     png(path)
-#     iteration_plot(edge_den, paste("edge density in group", group), start, end, ...)
-#     dev.off()
-#   } 
 }
 
 # scatterplot of edge frequency between pairs of variables vs correlation between those variables in the data set
-edge_freq_plot = function(sbfc_result, data, save=T, ...) {
-  #data = data_import(...)
+edge_freq_plot = function(sbfc_result, data, ...) {
   corr = cor(data$TrainX)-diag(ncol(data$TrainX))
   freq = freq_matrix(sbfc_result, ...)
   plot(abs(corr), freq)
-#   if (save) {
-#     path = gen_path("edge_freq_plot", filetype="png", ...)
-#     png(path)
-#     plot(abs(corr), freq)
-#     dev.off()
-#   }
 }
 
 ################ Other classification methods for comparison ###############################
@@ -308,7 +220,7 @@ nb = function(data, e1071=T, smooth=F) {
 }
 
 # Random Forest
-rf = function(data, cutoff=10, label_size=1) {  
+ra = function(data, cutoff=10, label_size=1) {  
   require(ranger)
   t = proc.time()
   rf = ranger(y~.,data=data$Train, importance='impurity', write.forest=T)
@@ -405,29 +317,6 @@ tn = function(data) {
   list(accuracy = accuracy, runtime = runtime, testclass=testclass)
 }
 
-# Bayesian Network
-bn = function(data) {
-  require("bnlearn")
-  t = proc.time()
-  train = data$Train[, sapply(data$Train, nlevels) > 1]
-  bn_fit = bn.fit(hc(train), train)
-  testclass = predict(bn_fit, node="y", data=data$Test[, sapply(data$Test, nlevels) > 1], method="bayes-lw")
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# getting a method function from its name
-method_fun = function(method_name) {
-  if (method_name == "bart") bt
-  else if (method_name == "cart") ct
-  else if (method_name == "c50") c5
-  else if (method_name == "svm") sv
-  else if (method_name == "lasso") la
-  else if (method_name == "tan") tn
-  else get(method_name)
-}
-
 # run a classification method with cross-validation (for small data sets)
 method_cv = function(data, method, n_folds=5) {
   t = proc.time()
@@ -460,156 +349,4 @@ method_cv = function(data, method, n_folds=5) {
   accuracy = mean(testclass==data$TrainY)
   runtime = proc.time() - t
   list(accuracy = accuracy, testclass = testclass, runtime = runtime)
-}
-
-################# Results ##########################################
-
-#### Helper functions #####
-
-list_dirs <- function(path=".", pattern=NULL, all.dirs=FALSE, full.names=FALSE, ignore.case=FALSE, dirs_only = TRUE) {
-  # code from http://stackoverflow.com/questions/4749783/
-  # how-to-obtain-a-list-of-directories-within-a-directory-like-list-files-but-i
-  # use full.names=TRUE to pass to file.info
-  all <- list.files(path, pattern, all.dirs,
-                    full.names=TRUE, recursive=FALSE, ignore.case)
-  if (dirs_only) {
-    dirs <- all[file.info(all)$isdir]
-  } else {
-    dirs <- all
-  }
-  # determine whether to return full names or just dir names
-  if(isTRUE(full.names))
-    return(dirs)
-  else
-    return(basename(dirs))
-}
-
-strip = function(out) {
-  as.numeric(substr(out, 1, nchar(out)-1))
-}
-
-info_import = function(type="Accuracy", ...) {
-  output = scan(gen_path("Output", ...), "raw", quiet=T)
-  acc_rows = grep(type, output)+1
-  if (type=="Time") {
-    strip(output[acc_rows])
-  } else {
-    as.numeric(output[acc_rows])
-  }
-}
-
-# adding extra noise variables
-data_augment = function(id, pref, nvar=10000, test=F) {
-  alldata = data_import(id, pref, test=test)
-  data = alldata$TrainX
-  for (i in (ncol(data)+1):nvar) {
-    index = sample(1:ncol(data), 1)
-    rows = sample(1:nrow(data), nrow(data), replace=F)
-    data[,i] = data[rows, index]
-  }
-  alldata$TrainX = data
-  output_data(alldata, paste0(id, "_extra"), pref, test)
-}
-
-#### Summarization functions ####
-
-# summarize SBFC classification results
-info_sbfc = function(id, pref, suff="", nosuff="", ...) {
-  dirs = list_dirs(paste0(pref, id))
-  rows = grep("sbfc", dirs)
-  if (suff != "") {
-    suff_rows = grep(paste0("_", suff), dirs)
-    rows = intersect(rows, suff_rows)
-  }
-  if (nosuff != "") {
-    nosuff_rows = grep(paste0("_", nosuff), dirs, invert=T)
-    rows = intersect(rows, nosuff_rows)
-  }
-  x = c()
-  for (i in rows) {
-    x = c(x, info_import(id=id, dir=dirs[i], samples=T, pref=pref, ...))
-  }
-  x
-}
-
-# summarize classification results for a given method
-info_method = function(id, method_name, pref, type="Accuracy") {
-  files = list_dirs(paste0(pref, id), dirs_only = F)
-  rows = intersect(grep(method_name, files), grep(type, files))
-  info = c()
-  for (i in rows) {
-    info = c(info, read.table(paste0(pref, id, "/", files[i]), header=F)[1,1])
-  }
-  info
-}
-
-# output a confidence interval for an info vector
-summ = function(info) {
-  paste0(signif(mean(info),3), "+-", signif(sd(info),1))
-}
-
-#### Result tables for UCI data sets ####
-
-# for small data sets with 2 classes
-method_name_list = c("bart", "rf", "nb", "cart", "c5.0", "lr", "svm", "lasso", "bn")
-method_list = c(bt, rf, nb, ct, c5, lr, sv, la, tan)
-data_list = c("australian","breast","chess","cleve","corral","crx","diabetes","flare",
-              "german","glass2","heart","hepatitis","mofn","pima","vote")
-cv_list = c(T, T, F, T, T, T, T, T, T, T, T, T, F, T, T) # whether a data set requires cross-validation
-# for small multiclass data sets (with >2 classes)
-method_multi_list = c(rf, nb, ct, c5, sv, bn) # methods that can handle multi-class data
-method_name_multi_list = c("rf", "nb", "cart", "c5.0", "svm", "bn")
-data_multi_list = c("glass", "iris", "letter", "lymphography", "satimage", "segment", "shuttle", "soybean", "vehicle", "waveform")
-cv_multi_list = c(T, T, F, T, F, F, F, T, T, F)
-# large data sets with >300 variables
-large_data_list = c("microsoft", "madelon", "isolet", "ad", "gisette", "arcene")
-
-# produce result table for a set of other methods on a collection of data sets
-results_method_data = function(data.list, cv.list, method.list, method.name.list, pref, ...) {
-  results = matrix(0, length(data.list), length(method.name.list))
-  dimnames(results) = list(data.list, method.name.list)
-  for (i in 1:length(data.list)) {
-    id = data.list[i]
-    data = data_import(id, pref, test = !cv.list[i])
-    data_factor = data_import(id, pref, factor=T, test = !cv.list[i])
-    for (j in 1:length(method.list)) {
-      method = method.list[[j]]
-      if (method.name.list[j] %in% c("nb", "bn", "tan")) {
-        d = data_factor
-      } else {
-        d = data
-      }
-      if (cv.list[i]) {
-        results[i,j] = method_cv(d, method, ...)$accuracy
-      } else {
-        results[i,j] = method(d)$accuracy
-      }
-    }
-  }
-  results
-}
-
-# produce result table for a set of other methods on one data set with different numbers of variables
-# requires the data set to include a large number of extra noise variables
-results_method_nvar = function(id, cv, method.list, method.name.list, nvar= c(100,1000,10000), pref, ...) {
-  results = matrix(0, length(nvar), length(method.list))
-  dimnames(results) = list(nvar, method.name.list)
-  for (i in 1:length(nvar)) {
-    data = data_import(id, pref, nvar=nvar[i], test = !cv)
-    data_factor = data_import(id, pref, nvar=nvar[i], factor=T, test = !cv)
-    for (j in 1:length(method.list)) {
-      method = method.list[[j]]
-      if (method.name.list[j] %in% c("nb", "bn", "tan")) {
-        d = data_factor
-      } else {
-        d = data
-      }
-      if (cv) {
-        results[i,j] = method_cv(d, method, ...)$accuracy
-      } else {
-        results[i,j] = method(d)$accuracy
-      }
-    }
-  }
-  results
 }

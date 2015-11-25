@@ -5,7 +5,14 @@ Version: 1.0
 Date: 2015-11-22
 Author: Anonymous
 Maintainer: Anonymous <anon@email.com>
-Description: SBFC is an MCMC algorithm for simultaneous feature selection and classification. This package allows you to run SBFC, make graphs showing the selected features and feature interactions, and perform other analysis of the results.
+Description: SBFC is an MCMC algorithm for simultaneous feature selection and
+    classification. This package allows you to run SBFC, make graphs showing the
+    selected features and feature interactions, and perform other analysis of the
+    results.
 License: GPL (>= 2)
-Imports: Rcpp (>= 0.12.2), RcppArmadillo
+Imports:
+    Rcpp (>= 0.12.2),
+    RcppArmadillo
 LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 5.0.1
+LazyData: true
