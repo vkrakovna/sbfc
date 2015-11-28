@@ -2,13 +2,15 @@ Package: sbfc
 Type: Package
 Title: Selective Bayesian Forest Classifier
 Version: 1.0
-Date: 2015-11-22
-Author: Anonymous
-Maintainer: Anonymous <anon@email.com>
+Date: 2015-11-27
+Author: Viktoriya Krakovna
+Maintainer: Viktoriya Krakovna <vkrakovna@gmail.com>
+URL: http://github.com/vkrakovna/sbfc
+BugReports: http://github.com/vkrakovna/sbfc/issues
 Description: SBFC is an MCMC algorithm for simultaneous feature selection and
     classification. This package allows you to run SBFC, make graphs showing the
     selected features and feature interactions, and perform other analysis of the
-    results.
+    results. See paper: http://arxiv.org/abs/1506.02371
 License: GPL (>= 2)
 Imports:
     Rcpp (>= 0.12.2),
