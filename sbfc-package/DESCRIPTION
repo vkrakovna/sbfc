@@ -12,6 +12,7 @@ Description: SBFC is an MCMC algorithm for simultaneous feature selection and
     selected features and feature interactions, and perform other analysis of the
     results. See paper: http://arxiv.org/abs/1506.02371
 License: GPL (>= 2)
+Depends: R (>= 2.10)
 Imports:
     Rcpp (>= 0.12.2),
     RcppArmadillo
