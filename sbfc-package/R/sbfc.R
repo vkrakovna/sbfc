@@ -1,3 +1,5 @@
+##' @useDynLib sbfc
+##' @importFrom Rcpp evalCpp
 #### SBFC graphs ####
 
 # produces GraphViz code for a graph for a single MCMC sample
@@ -63,28 +65,10 @@ average_sbfc_graph = function(groups, parents, cutoff=0.2, edges_only=F, noise_s
 }
 
 graphviz_plot = function(gv_source) {
-  require(Rgraphviz)
+  requireNamespace(Rgraphviz)
   file = tempfile()
   write(gv_source, file)
   plot(agread(file))
-}
-
-graphviz_plot1 = function(gv_source) {
-  require(Rgraphviz)
-  require(grImport)
-  require(grid)
-  file = tempfile()
-  file2 = tempfile()
-  file3 = tempfile()
-  write(gv_source, file)
-  # png(file2)
-  toFile(agread(file), filename = file2, fileType = "ps")
-  print(file2)
-  PostScriptTrace(file2,file3)
-  grid.picture(readPicture(file3)[-1])
-  #dev.off()
-  #p = readPNG(file2)
-  #grid.raster(p)
 }
 
 ##' @title SBFC graph
@@ -192,161 +176,4 @@ edge_freq_plot = function(sbfc_result, data, ...) {
   corr = cor(data$TrainX)-diag(ncol(data$TrainX))
   freq = freq_matrix(sbfc_result, ...)
   plot(abs(corr), freq)
-}
-
-################ Other classification methods for comparison ###############################
-
-# naive Bayes
-nb = function(data, e1071=T, smooth=F) {  
-  t = proc.time()
-  testclass = if(e1071) {
-    require("e1071")
-    laplace=0
-    if (smooth) laplace = mean(1/sapply(data$TrainX,nlevels))/nlevels(data$TrainY)
-    predict(naiveBayes(y~.,data=data$Train,laplace=laplace), data$TestX)
-  } else {
-    base.rates = as.numeric(1+table(data$TrainY))
-    clas = matrix(log(base.rates),nrow(data$TestX),nlevels(data$TrainY), byrow=T)
-    for(i in 1:ncol(data$TrainX)) {
-      clas = clas + log((table(data$TrainX[,i], data$TrainY) + 
-                           1/nlevels(data$TrainX[,i])/nlevels(data$TrainY))[data$TestX[,i],] /
-                        base.rates[col(clas)])
-    }
-    levels(data$TrainY)[apply(clas,1,which.max)]
-  }
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# Random Forest
-ra = function(data, cutoff=10, label_size=1) {  
-  require(ranger)
-  t = proc.time()
-  rf = ranger(y~.,data=data$Train, importance='impurity', write.forest=T)
-  imp = rf$variable.importance
-  names(imp) = paste0("X", 1:ncol(data$TrainX))
-  imp_ranking = sort(imp, decreasing=T)
-  barplot(imp_ranking[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Importance", xlab="variable")
-  testclass = predict(rf, data$TestX)$predictions
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass, importance=imp_ranking)
-}
-
-# CART
-ct = function(data) { 
-  require(tree)
-  t = proc.time()
-  testclass = predict(tree(y~.,data=data$Train),data$TestX, type="class")
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# BART
-bt = function(data, cutoff=10, label_size=1) { 
-  require(BayesTree)
-  t = proc.time()
-  bart_res = bart(x.train = data$TrainX * 1.0, y.train = data$TrainY, x.test = data$TestX, verbose=F)
-  imp = apply(bart_res$varcount, 2, mean)
-  names(imp) = paste0("V", 1:ncol(data$TrainX))
-  imp_ranking = sort(imp, decreasing=T)
-  barplot(imp_ranking[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Average count", xlab="variable")
-  testclass = as.factor(round(apply(pnorm(bart_res$yhat.test), 2, mean)))
-  levels(testclass) = levels(data$TestY)
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass, importance=imp_ranking)
-}
-
-# logistic regression
-lr = function(data) { 
-  t = proc.time()
-  testclass = as.factor(round(predict(glm(y~.,family=binomial,data$Train),data$TestX,type="response")))
-  levels(testclass) = levels(data$TestY)
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# Lasso (glmnet)
-la = function(data, cutoff=10, label_size=1) { 
-  require('glmnet')
-  t = proc.time()
-  model = cv.glmnet(x=as.matrix(data$TrainX), y=data$TrainY, family="multinomial")
-  imp = abs(as.matrix(coef(model)[[1]]))[-1]
-  names(imp) = paste0("X", 1:ncol(data$TrainX))
-  imp_ranking = sort(imp, decreasing=T)
-  barplot(imp_ranking[1:cutoff], cex.names = label_size, cex.lab=1.5, ylab="Coefficient", xlab="variable")
-  testclass = as.numeric(predict(model, as.matrix(data$TestX), type="class"))
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass, importance = imp_ranking)
-}
-
-# Support Vector Machines
-sv = function(data){  
-  require("e1071")
-  t = proc.time()
-  testclass = predict(svm(y~.,data=data$Train), data$TestX)
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# C.50 (decision tree classifier)
-c5 = function(data) { 
-  require("C50")
-  t = proc.time()
-  testclass = predict(C5.0(y~.,data=data$Train), newdata=data$TestX)
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# TAN
-tn = function(data) {
-  require("bnlearn")
-  t = proc.time()
-  train = data$Train[, sapply(data$Train, nlevels) > 1]
-  tan = tree.bayes(x = train, training = 'y')
-  testclass = predict(bn.fit(tan, train, method = "bayes"), data$Test[, sapply(data$Test, nlevels) > 1])
-  accuracy = mean(testclass==data$TestY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, runtime = runtime, testclass=testclass)
-}
-
-# run a classification method with cross-validation (for small data sets)
-method_cv = function(data, method, n_folds=5) {
-  t = proc.time()
-  n_units = length(data$TrainY)
-  row_shuffle = sample(1:n_units, replace=F)
-  testclass = as.factor(rep(NA, n_units))
-  levels(testclass) = levels(data$TrainY)
-  fold_start = 1
-  fold_size = floor(n_units / n_folds)
-  mod = n_units %% n_folds
-  
-  for (i in 1:n_folds) {
-    fold_end = fold_start + fold_size
-    if (i > mod) fold_end = fold_end - 1
-    test_subset = row_shuffle[fold_start:fold_end]
-    train_subset = row_shuffle[-(fold_start:fold_end)]
-    
-    datafold = list()
-    datafold$TrainX = data$TrainX[train_subset,]
-    datafold$TestX = data$TrainX[test_subset,] 
-    datafold$TrainY = data$TrainY[train_subset]
-    datafold$TestY = data$TrainY[test_subset]
-    datafold$Train = cbind(y = datafold$TrainY, datafold$TrainX)
-    datafold$Test = cbind(y = datafold$TestY, datafold$TestX)  
-    testclass[test_subset] = method(datafold)$testclass
-    fold_start = fold_end + 1
-  }
-  stopifnot(fold_end == n_units)
-  levels(testclass) = levels(data$TrainY)
-  accuracy = mean(testclass==data$TrainY)
-  runtime = proc.time() - t
-  list(accuracy = accuracy, testclass = testclass, runtime = runtime)
 }

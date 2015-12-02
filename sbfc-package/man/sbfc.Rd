@@ -4,28 +4,37 @@
 \alias{sbfc}
 \title{Selective Bayesian Forest Classifier algorithm}
 \usage{
-sbfc(TrainX = NULL, TrainY = NULL, TestX = NULL, TestY = NULL)
+sbfc(TrainX = NULL, TrainY = NULL, TestX = NULL, TestY = NULL,
+  nstep = NULL, thin = 50L, cv = TRUE, thinoutputs = FALSE)
 }
 \arguments{
-\item{TrainX}{matrix containing the training data}
+\item{TrainX}{Matrix containing the training data.}
 
-\item{TrainY}{vector containing the class labels for the training data}
+\item{TrainY}{Vector containing the class labels for the training data.}
 
-\item{TestX}{matrix containing the test data, if applicable}
+\item{TestX}{Matrix containing the test data, if applicable.}
 
-\item{TestY}{vector containing the class labels for the test data}
+\item{TestY}{Vector containing the class labels for the test data.}
+
+\item{nstep}{Number of MCMC steps, default max(10000, 10 * ncol(TrainX)).}
+
+\item{thin}{Thinning factor for the MCMC.}
+
+\item{cv}{Do cross-validation on the training set (if test set is not provided).}
+
+\item{thinoutputs}{Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs.}
 }
 \value{
 An object of class \code{sbfc}:
 \describe{     
-\item{\code{accuracy}}{classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set)}
-\item{\code{predictions}}{vector of class label predictions (for the test set if provided, otherwise for the training set)}
-\item{\code{probabilities}}{matrix of class label probabilities (for the test set if provided, otherwise for the training set)}
-\item{\code{runtime}}{total runtime of the algorithm in seconds}
-\item{\code{parents}}{matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root)}
-\item{\code{groups}}{matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal)}
-\item{\code{trees}}{matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j}
-\item{\code{logposterior}}{vector representing the log posterior at each iteration of the MCMC}
+\item{\code{accuracy}}{Classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set).}
+\item{\code{predictions}}{Vector of class label predictions (for the test set if provided, otherwise for the training set).}
+\item{\code{probabilities}}{Matrix of class label probabilities (for the test set if provided, otherwise for the training set).}
+\item{\code{runtime}}{Total runtime of the algorithm in seconds.}
+\item{\code{parents}}{Matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root).}
+\item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
+\item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
+\item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
 }
 }
 \description{
@@ -39,8 +48,9 @@ For data sets with 1000 or more variables, the output matrices are thinned by de
 }
 \examples{
 data(chess)
-chess_result = sbfc(as.matrix(chess$TrainX), as.numeric(chess$TrainY), as.matrix(chess$TestX), as.numeric(chess$TestY))
+chess_result = sbfc(as.matrix(chess$TrainX), as.integer(chess$TrainY), 
+                    as.matrix(chess$TestX), as.integer(chess$TestY))
 data(corral)
-corral_result = sbfc(as.matrix(corral$TrainX), as.numeric(corral$TrainY)) # uses cross-validation
+corral_result = sbfc(as.matrix(corral$TrainX), as.integer(corral$TrainY), cv=FALSE)
 }
 

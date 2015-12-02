@@ -1,5 +1,4 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-//#include <RcppArmadillo.h>
 #include <RcppArmadilloExtensions/sample.h>
 #include <armadillo>
 #include <iostream>
@@ -87,9 +86,10 @@ struct parameters {
 	string start; // starting graph for the algorithm (single noise nodes, random groups with single nodes, or random trees)
 	string output_id; // name of output directory
 	bool thread; // whether to run cross-validation with parallel threads
+	bool classify; // whether to run classification
 
 	parameters(): alpha(5), edge_mult(4), yedge_mult(1), k(10), n_var(0), n_step(0), burnin_frac(5),
-				 thin(50), thin_output(false), n_folds(5), start("noise"), thread(false) {};
+				 thin(50), thin_output(false), n_folds(5), start("noise"), thread(false), classify(true) {};
 };
 
 struct outputs {
@@ -778,6 +778,7 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 			Outputs.Groups.row(i) = Graph.Group.t();
 			Outputs.Trees.row(i) = Graph.Tree.t();
 			Outputs.Parents.row(i) = Graph.Parent.t();
+			Outputs.logpost(i) = LogPostProb(Graph, logpost_matrix, Parameters);
 		}
 		ftime(&t3);
 
@@ -859,6 +860,7 @@ void Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n
 		max_index_set = find(probs.row(j) == max(probs.row(j)));
 		assert(max_index_set.n_elem > 0); // is usually violated in case of infinity errors somewhere
 		testclass(j) = cat_y(max_index_set(0));
+		probs.row(j) = probs.row(j) / sum(probs.row(j));
 	}
 	//probs.save(Parameters.output_id + "_Probabilities.txt", csv_ascii);
 	Outputs.probs = probs;
@@ -882,7 +884,7 @@ void SBFC(const data &Data, const parameters &Parameters, outputs &Outputs) {
 	vec logpost(Parameters.n_samples);
 	MCMC(Graphs, logpost, Data, logpost_matrix, Parameters, Outputs);
 	ftime(&t4);
-	Classify(Graphs, Counts, n_levels, cat, cat_y, logpost, Data, Parameters, Outputs);
+	if (Parameters.classify) Classify(Graphs, Counts, n_levels, cat, cat_y, logpost, Data, Parameters, Outputs);
 	ftime(&t5);
 	vec times(5);
 	times(0) = t2.time - t1.time;
@@ -994,7 +996,7 @@ double CV_SBFC(const data &Data, const parameters &Parameters, outputs &Outputs)
 
 double RunSBFC(const data &Data, parameters &Parameters, outputs &Outputs) {
 	double accuracy = 0;
-	if (Data.X_test.is_empty()) { // use k-fold cross-validation to compute accuracy
+	if (Data.X_test.is_empty() && Parameters.classify) { // use k-fold cross-validation to compute accuracy
 		accuracy = CV_SBFC(Data, Parameters, Outputs); 
 	} else { // use test data set to compute accuracy
 		SBFC(Data, Parameters, Outputs);
@@ -1049,7 +1051,7 @@ void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
 	Parameters.n_units = n_units;
 	if (Parameters.n_var == 0) Parameters.n_var = n_var;
 	assert(Parameters.n_var <= n_var);
-	if (Parameters.n_var >=1000) Parameters.thin_output = true;
+	//if (Parameters.n_var >=1000) Parameters.thin_output = true;
 	if (Parameters.n_step == 0) Parameters.n_step = max((unsigned)10000, 10 * Parameters.n_var);
 	Parameters.n_rows = Parameters.thin_output?(Parameters.n_step/Parameters.thin):Parameters.n_step;
 	Parameters.n_samples = (Parameters.n_step - Parameters.n_step/Parameters.burnin_frac) / Parameters.thin;
@@ -1223,17 +1225,20 @@ int main(int argc, char* argv[]) {
 
 void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &TestY) {
 	if ((TrainX != R_NilValue) && (TrainY != R_NilValue)) {
+	  if ((TYPEOF(TrainX) != INTSXP) || (TYPEOF(TrainY) != INTSXP)) Rf_error("Training data must be categorical with integer category labels.");
 		Data.X_train = as<smat>(TrainX);
 		Data.Y_train = as<svec>(TrainY);
 		assert(Data.X_train.n_rows == Data.Y_train.n_rows);
 	} else {
-		Rf_error("Training data missing");
+		Rf_error("Please provide the training data.");
 	}
 	if (TestX != R_NilValue) {
+	  if (TYPEOF(TestX) != INTSXP) Rf_error("Test data must be categorical with integer category labels.");
 		Data.X_test = as<smat>(TestX);
 		assert(Data.X_test.n_cols == Data.X_train.n_cols);
 		Data.X = join_cols(Data.X_train, Data.X_test);
 		if (TestY != R_NilValue) {
+		  if (TYPEOF(TestY) != INTSXP) Rf_error("Test data must be categorical with integer category labels.");
 			Data.Y_test = as<svec>(TestY);
 			assert(Data.X_test.n_rows == Data.Y_test.n_rows);
 			Data.Y = join_cols(Data.Y_train, Data.Y_test);
@@ -1252,10 +1257,14 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 //' @description
 //' Runs the SBFC algorithm on a discretized data set.
 //' 
-//' @param TrainX matrix containing the training data
-//' @param TrainY vector containing the class labels for the training data
-//' @param TestX matrix containing the test data, if applicable
-//' @param TestY vector containing the class labels for the test data
+//' @param TrainX Matrix containing the training data.
+//' @param TrainY Vector containing the class labels for the training data.
+//' @param TestX Matrix containing the test data, if applicable.
+//' @param TestY Vector containing the class labels for the test data.
+//' @param nstep Number of MCMC steps, default max(10000, 10 * ncol(TrainX)).
+//' @param thin Thinning factor for the MCMC. 
+//' @param cv Do cross-validation on the training set (if test set is not provided).
+//' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs.
 //' @details
 //' Data needs to be discretized before running SBFC.
 //' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. If the test data class vector TestY is provided, the accuracy is computed. If the test data matrix TestX is not provided, SBFC performs cross-validation on the training data set TrainX, and returns predicted classes and accuracy for the training data.  
@@ -1263,28 +1272,34 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 //' For data sets with 1000 or more variables, the output matrices are thinned by default, and contain only the thinned samples used for classification.
 //' @return An object of class \code{sbfc}:
 //' \describe{     
-//' \item{\code{accuracy}}{classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set)}
-//' \item{\code{predictions}}{vector of class label predictions (for the test set if provided, otherwise for the training set)}
-//' \item{\code{probabilities}}{matrix of class label probabilities (for the test set if provided, otherwise for the training set)}
-//' \item{\code{runtime}}{total runtime of the algorithm in seconds}
-//' \item{\code{parents}}{matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root)}
-//' \item{\code{groups}}{matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal)}
-//' \item{\code{trees}}{matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j}
-//' \item{\code{logposterior}}{vector representing the log posterior at each iteration of the MCMC}
+//' \item{\code{accuracy}}{Classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set).}
+//' \item{\code{predictions}}{Vector of class label predictions (for the test set if provided, otherwise for the training set).}
+//' \item{\code{probabilities}}{Matrix of class label probabilities (for the test set if provided, otherwise for the training set).}
+//' \item{\code{runtime}}{Total runtime of the algorithm in seconds.}
+//' \item{\code{parents}}{Matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root).}
+//' \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
+//' \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
+//' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
 //' }
 //' @examples
 //' data(chess)
-//' chess_result = sbfc(as.matrix(chess$TrainX), as.numeric(chess$TrainY), as.matrix(chess$TestX), as.numeric(chess$TestY))
+//' chess_result = sbfc(as.matrix(chess$TrainX), as.integer(chess$TrainY), 
+//'                     as.matrix(chess$TestX), as.integer(chess$TestY))
 //' data(corral)
-//' corral_result = sbfc(as.matrix(corral$TrainX), as.numeric(corral$TrainY)) # uses cross-validation
+//' corral_result = sbfc(as.matrix(corral$TrainX), as.integer(corral$TrainY), cv=FALSE)
 //' @export
 // [[Rcpp::export]]
-List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue) {
+List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, int thin = 50, bool cv = true, bool thinoutputs = false) {
   timeb start, end;
   ftime(&start);
 	data Data;
 	DataImportR(Data, TrainX, TrainY, TestX, TestY);
 	parameters Parameters;
+	Parameters.classify = cv;
+	Parameters.thin_output = thinoutputs;
+	Parameters.thin = (unsigned)thin;
+	if (nstep != R_NilValue) Parameters.n_step = as<unsigned>(nstep);
+	if (TestX != R_NilValue) Parameters.classify = true;
 	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);
 	outputs Outputs(Parameters.n_var, Parameters.n_rows, Parameters.n_step);
 	double accuracy = RunSBFC(Data, Parameters, Outputs);

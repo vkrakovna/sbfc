@@ -6,10 +6,14 @@
 #' @description
 #' Runs the SBFC algorithm on a discretized data set.
 #' 
-#' @param TrainX matrix containing the training data
-#' @param TrainY vector containing the class labels for the training data
-#' @param TestX matrix containing the test data, if applicable
-#' @param TestY vector containing the class labels for the test data
+#' @param TrainX Matrix containing the training data.
+#' @param TrainY Vector containing the class labels for the training data.
+#' @param TestX Matrix containing the test data, if applicable.
+#' @param TestY Vector containing the class labels for the test data.
+#' @param nstep Number of MCMC steps, default max(10000, 10 * ncol(TrainX)).
+#' @param thin Thinning factor for the MCMC. 
+#' @param cv Do cross-validation on the training set (if test set is not provided).
+#' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs.
 #' @details
 #' Data needs to be discretized before running SBFC.
 #' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. If the test data class vector TestY is provided, the accuracy is computed. If the test data matrix TestX is not provided, SBFC performs cross-validation on the training data set TrainX, and returns predicted classes and accuracy for the training data.  
@@ -17,22 +21,23 @@
 #' For data sets with 1000 or more variables, the output matrices are thinned by default, and contain only the thinned samples used for classification.
 #' @return An object of class \code{sbfc}:
 #' \describe{     
-#' \item{\code{accuracy}}{classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set)}
-#' \item{\code{predictions}}{vector of class label predictions (for the test set if provided, otherwise for the training set)}
-#' \item{\code{probabilities}}{matrix of class label probabilities (for the test set if provided, otherwise for the training set)}
-#' \item{\code{runtime}}{total runtime of the algorithm in seconds}
-#' \item{\code{parents}}{matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root)}
-#' \item{\code{groups}}{matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal)}
-#' \item{\code{trees}}{matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j}
-#' \item{\code{logposterior}}{vector representing the log posterior at each iteration of the MCMC}
+#' \item{\code{accuracy}}{Classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set).}
+#' \item{\code{predictions}}{Vector of class label predictions (for the test set if provided, otherwise for the training set).}
+#' \item{\code{probabilities}}{Matrix of class label probabilities (for the test set if provided, otherwise for the training set).}
+#' \item{\code{runtime}}{Total runtime of the algorithm in seconds.}
+#' \item{\code{parents}}{Matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root).}
+#' \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
+#' \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
+#' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
 #' }
 #' @examples
 #' data(chess)
-#' chess_result = sbfc(as.matrix(chess$TrainX), as.numeric(chess$TrainY), as.matrix(chess$TestX), as.numeric(chess$TestY))
+#' chess_result = sbfc(as.matrix(chess$TrainX), as.integer(chess$TrainY), 
+#'                     as.matrix(chess$TestX), as.integer(chess$TestY))
 #' data(corral)
-#' corral_result = sbfc(as.matrix(corral$TrainX), as.numeric(corral$TrainY)) # uses cross-validation
+#' corral_result = sbfc(as.matrix(corral$TrainX), as.integer(corral$TrainY), cv=FALSE)
 #' @export
-sbfc <- function(TrainX = NULL, TrainY = NULL, TestX = NULL, TestY = NULL) {
-    .Call('sbfc_sbfc', PACKAGE = 'sbfc', TrainX, TrainY, TestX, TestY)
+sbfc <- function(TrainX = NULL, TrainY = NULL, TestX = NULL, TestY = NULL, nstep = NULL, thin = 50L, cv = TRUE, thinoutputs = FALSE) {
+    .Call('sbfc_sbfc', PACKAGE = 'sbfc', TrainX, TrainY, TestX, TestY, nstep, thin, cv, thinoutputs)
 }
 
