@@ -5,20 +5,22 @@
 \title{SBFC graph}
 \usage{
 sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
-  edges_only = F, ...)
+  single_noise_nodes = F, labels = paste0("X", 1:ncol(sbfc_result$parents)))
 }
 \arguments{
-\item{sbfc_result}{An object of class \code{sbfc}}
+\item{sbfc_result}{An object of class \code{sbfc}.}
 
-\item{iter}{MCMC iteration of the sampled graph, if \code{average=F} (default=10000)}
+\item{iter}{MCMC iteration of the sampled graph, if \code{average=F} (default=10000).}
 
-\item{average}{Whether to plot an average of sampled MCMC graphs (default=TRUE)}
+\item{average}{Plot an average of sampled MCMC graphs (default=TRUE).}
 
-\item{edge_cutoff}{The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2)}
+\item{edge_cutoff}{The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2).}
 
-\item{noise_singletons}{Whether to plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).}
+\item{single_noise_nodes}{Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).}
 
-\item{names}{Node names for the graph labels (default=\code{c("X1","X2",...)})}
+\item{labels}{Node labels (default=\code{c("X1","X2",...)}).}
+
+\item{edges_only}{Omit single-node trees (default=FALSE).}
 }
 \description{
 Plots a sampled MCMC graph or an average of sampled graphs.

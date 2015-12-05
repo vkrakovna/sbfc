@@ -5,7 +5,8 @@
 \title{Selective Bayesian Forest Classifier algorithm}
 \usage{
 sbfc(TrainX = NULL, TrainY = NULL, TestX = NULL, TestY = NULL,
-  nstep = NULL, thin = 50L, cv = TRUE, thinoutputs = FALSE)
+  nstep = NULL, thin = 50L, burnin_denom = 5L, cv = TRUE,
+  thinoutputs = FALSE)
 }
 \arguments{
 \item{TrainX}{Matrix containing the training data.}
@@ -20,9 +21,11 @@ sbfc(TrainX = NULL, TrainY = NULL, TestX = NULL, TestY = NULL,
 
 \item{thin}{Thinning factor for the MCMC.}
 
+\item{burnin_denom}{Denominator of the fraction of total MCMC steps discarded as burnin (default=5).}
+
 \item{cv}{Do cross-validation on the training set (if test set is not provided).}
 
-\item{thinoutputs}{Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs.}
+\item{thinoutputs}{Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).}
 }
 \value{
 An object of class \code{sbfc}:
@@ -35,16 +38,18 @@ An object of class \code{sbfc}:
 \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
 \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
 \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
+\item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
 }
 }
 \description{
 Runs the SBFC algorithm on a discretized data set.
 }
 \details{
-Data needs to be discretized before running SBFC.
-If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. If the test data class vector TestY is provided, the accuracy is computed. If the test data matrix TestX is not provided, SBFC performs cross-validation on the training data set TrainX, and returns predicted classes and accuracy for the training data.  
-The number of MCMC iterations is \code{max(10000, 10 * n_var)}. 
-For data sets with 1000 or more variables, the output matrices are thinned by default, and contain only the thinned samples used for classification.
+Data needs to be discretized before running SBFC. \cr
+If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. 
+If the test data class vector TestY is provided, the accuracy is computed. 
+If the test data matrix TestX is not provided, and cv is set to TRUE, SBFC performs cross-validation on the training data set TrainX, 
+and returns predicted classes and accuracy for the training data. \cr
 }
 \examples{
 data(chess)

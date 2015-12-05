@@ -78,7 +78,7 @@ struct parameters {
 	unsigned n_units; // number of units
 	unsigned n_step; // total number of MCMC steps including burnin
 	unsigned n_rows; // number of rows in output matrices
-	unsigned burnin_frac; // (denominator of) fraction of total MCMC steps discarded as burnin
+	unsigned burnin_denom; // denominator of the fraction of total MCMC steps discarded as burnin
 	unsigned thin; // thinning factor for MCMC samples
 	unsigned n_samples; // number of MCMC samples
 	bool thin_output; // whether to output only the thinned samples or all samples from the MCMC
@@ -88,7 +88,7 @@ struct parameters {
 	bool thread; // whether to run cross-validation with parallel threads
 	bool classify; // whether to run classification
 
-	parameters(): alpha(5), edge_mult(4), yedge_mult(1), k(10), n_var(0), n_step(0), burnin_frac(5),
+	parameters(): alpha(5), edge_mult(4), yedge_mult(1), k(10), n_var(0), n_step(0), burnin_denom(5),
 				 thin(50), thin_output(false), n_folds(5), start("noise"), thread(false), classify(true) {};
 };
 
@@ -726,7 +726,7 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 	//string output_id = Parameters.output_id;
 
 	//unsigned n_step = Parameters.n_step;
-	unsigned n_burnin = Parameters.n_step / Parameters.burnin_frac;
+	unsigned n_burnin = Parameters.n_step / Parameters.burnin_denom;
 	
 	assert(Graphs.n_elem == Parameters.n_samples);
 	assert(logpost.n_elem == Parameters.n_samples);
@@ -1054,7 +1054,7 @@ void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
 	//if (Parameters.n_var >=1000) Parameters.thin_output = true;
 	if (Parameters.n_step == 0) Parameters.n_step = max((unsigned)10000, 10 * Parameters.n_var);
 	Parameters.n_rows = Parameters.thin_output?(Parameters.n_step/Parameters.thin):Parameters.n_step;
-	Parameters.n_samples = (Parameters.n_step - Parameters.n_step/Parameters.burnin_frac) / Parameters.thin;
+	Parameters.n_samples = (Parameters.n_step - Parameters.n_step/Parameters.burnin_denom) / Parameters.thin;
 	Parameters.scaling = log(Parameters.n_var);
 }
 
@@ -1105,7 +1105,7 @@ void InitParam(int argc, char* argv[], data &Data, parameters &Parameters, strin
 			i++;
 		} else if(strcmp(argv[i], "-burninfrac") == 0) {
 			// (denominator of) fraction of total MCMC steps discarded as burnin 
-			Parameters.burnin_frac = atof(argv[i+1]);
+			Parameters.burnin_denom = atof(argv[i+1]);
 			i++;
 		} else if(strcmp(argv[i], "-thin") == 0) { // thinning factor for MCMC samples
 			Parameters.thin = atof(argv[i+1]);
@@ -1156,9 +1156,9 @@ void InitParam(int argc, char* argv[], data &Data, parameters &Parameters, strin
 				<< Parameters.n_units << " units" << endl;
 	cout        << output_dir << ": data set " << id << " with " << Parameters.n_var << " variables and " 
 				<< Parameters.n_units << " units" << endl;
-	out_stream  << Parameters.n_step << " total iterations, with 1/" << Parameters.burnin_frac
+	out_stream  << Parameters.n_step << " total iterations, with 1/" << Parameters.burnin_denom
 				<< " burnin, thinning every " << Parameters.thin << endl;
-	cout        << Parameters.n_step << " total iterations, with 1/" << Parameters.burnin_frac
+	cout        << Parameters.n_step << " total iterations, with 1/" << Parameters.burnin_denom
 				<< " burnin, thinning every " << Parameters.thin << endl;
 	out_stream  << "Edge penalty parameters: y-edge penalty multiplier=" << Parameters.yedge_mult 
 				<< ", x-edge penalty multiplier=" << Parameters.edge_mult << ", scaling factor = "
@@ -1263,13 +1263,15 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 //' @param TestY Vector containing the class labels for the test data.
 //' @param nstep Number of MCMC steps, default max(10000, 10 * ncol(TrainX)).
 //' @param thin Thinning factor for the MCMC. 
+//' @param burnin_denom Denominator of the fraction of total MCMC steps discarded as burnin (default=5).
 //' @param cv Do cross-validation on the training set (if test set is not provided).
-//' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs.
+//' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).
 //' @details
-//' Data needs to be discretized before running SBFC.
-//' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. If the test data class vector TestY is provided, the accuracy is computed. If the test data matrix TestX is not provided, SBFC performs cross-validation on the training data set TrainX, and returns predicted classes and accuracy for the training data.  
-//' The number of MCMC iterations is \code{max(10000, 10 * n_var)}. 
-//' For data sets with 1000 or more variables, the output matrices are thinned by default, and contain only the thinned samples used for classification.
+//' Data needs to be discretized before running SBFC. \cr
+//' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. 
+//' If the test data class vector TestY is provided, the accuracy is computed. 
+//' If the test data matrix TestX is not provided, and cv is set to TRUE, SBFC performs cross-validation on the training data set TrainX, 
+//' and returns predicted classes and accuracy for the training data. \cr
 //' @return An object of class \code{sbfc}:
 //' \describe{     
 //' \item{\code{accuracy}}{Classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set).}
@@ -1280,6 +1282,7 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 //' \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
 //' \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
 //' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
+//' \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
 //' }
 //' @examples
 //' data(chess)
@@ -1289,7 +1292,7 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 //' corral_result = sbfc(as.matrix(corral$TrainX), as.integer(corral$TrainY), cv=FALSE)
 //' @export
 // [[Rcpp::export]]
-List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, int thin = 50, bool cv = true, bool thinoutputs = false) {
+List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, int thin = 50, int burnin_denom = 5, bool cv = true, bool thinoutputs = false) {
   timeb start, end;
   ftime(&start);
 	data Data;
@@ -1298,6 +1301,7 @@ List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_Nil
 	Parameters.classify = cv;
 	Parameters.thin_output = thinoutputs;
 	Parameters.thin = (unsigned)thin;
+	Parameters.burnin_denom = (unsigned)burnin_denom;
 	if (nstep != R_NilValue) Parameters.n_step = as<unsigned>(nstep);
 	if (TestX != R_NilValue) Parameters.classify = true;
 	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);
@@ -1312,7 +1316,12 @@ List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_Nil
 	  _["parents"] = as<IntegerMatrix>(wrap(Outputs.Parents)),
 	  _["groups"] = as<IntegerMatrix>(wrap(Outputs.Groups)),
 	  _["trees"] = as<IntegerMatrix>(wrap(Outputs.Trees)),
-	  _["logposterior"] = as<NumericVector>(wrap(Outputs.logpost))
+	  _["logposterior"] = as<NumericVector>(wrap(Outputs.logpost)),
+	  _["nstep"] = nstep,
+	  _["thin"] = thin,
+	  _["burnin_denom"] = burnin_denom,
+	  _["cv"] = cv,
+	  _["thinoutputs"] = thinoutputs
 	);
 	Rf_setAttrib(results, wrap("class"), wrap("sbfc"));
 	return results;
