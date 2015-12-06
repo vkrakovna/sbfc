@@ -66,8 +66,8 @@ average_sbfc_graph = function(groups, parents, cutoff=0.2, single_noise_nodes=F,
 }
 
 graphviz_plot = function(gv_source) {
-  require('Rgraphviz')
   requireNamespace('Rgraphviz')
+  require('Rgraphviz')
   file = tempfile()
   write(gv_source, file)
   plot(agread(file))
@@ -79,7 +79,6 @@ graphviz_plot = function(gv_source) {
 ##' @param average Plot an average of sampled MCMC graphs (default=TRUE).
 ##' @param iter MCMC iteration of the sampled graph, if \code{average=F} (default=10000).
 ##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2).
-##' @param edges_only Omit single-node trees (default=FALSE).
 ##' @param single_noise_nodes Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).
 ##' @param labels Node labels (default=\code{c("X1","X2",...)}).
 ##' @details If the graph renders poorly in the R plot window, try changing the aspect ratio of the plot window.
@@ -89,13 +88,15 @@ sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.2, singl
   groups = sbfc_result$groups
   if (average) gv_source = average_sbfc_graph(groups, parents, edge_cutoff, single_noise_nodes, labels)
   else gv_source = single_sbfc_graph(groups, parents, iter, single_noise_nodes, labels)
+  pdf('testgraph.pdf')
   graphviz_plot(gv_source)
+  dev.off()
 }
 
 #### Graph counts and plots ####
 
 # helper function for trace plots over MCMC iterations and autocorrelation plots
-iteration_plot = function(vector, ylabel, start = 0, end = 1, type="trace", acf_window=100, ...) {
+iteration_plot = function(vector, ylabel, start=0, end=1, type="trace", acf_window=100, ...) {
   x = (start*length(vector)+1):(end*length(vector))
   if (type=="trace") plot(x, vector[x], type='l', ylab=ylabel)
   if (type=="acf") {
@@ -104,14 +105,15 @@ iteration_plot = function(vector, ylabel, start = 0, end = 1, type="trace", acf_
   }
 }
 
-##' @title Log posterior trace plot
+##' @title Log posterior  plot
 ##' @param sbfc_result An object of class \code{sbfc}.
 ##' @param start The start of the included range of MCMC iterations (default=0, i.e. starting with the first iteration).
 ##' @param end The end of the included range of MCMC iterations (default=1, i.e. ending with the last iteration).
+##' @param type Type of plot (either \code{trace} or \code{acf}, default=\code{trace}).
 ##' @description Plots the log posterior for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
 ##' @export
-logposterior_plot = function(sbfc_result, start=0, end=1, ...) {
-  iteration_plot(sbfc_result$logposterior, "Log posterior", start, end, ...)
+logposterior_plot = function(sbfc_result, start=0, end=1, type="trace") {
+  iteration_plot(sbfc_result$logposterior, "Log posterior", start, end, type)
 }
 
 # frequency matrix for graph edges
@@ -141,12 +143,12 @@ freq_matrix = function(sbfc_result, ...) {
 ##' rather than graphs from all iterations (default=FALSE).
 ##' @description Plots the Group 1 size for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
 ##' @export
-signal_size_plot = function(sbfc_result, start=0, end=1, samples=F, ...) {
+signal_size_plot = function(sbfc_result, start=0, end=1, samples=F) {
   n = nrow(sbfc_result$groups)
   if (samples) rows = seq(n/sbfc_result$burnin_denom + 1, n, by=sbfc_result$thin)
   else rows = 1:n
   ss = apply(sbfc_result$groups[rows,], 1, sum)
-  iteration_plot(ss, "signal group size", start, end, ...)
+  iteration_plot(ss, "signal group size", start, end)
 }
 
 ##' @title Signal variable proportion
@@ -186,7 +188,7 @@ tree_size_plot = function(sbfc_result, samples=F, ...) {
 ##' @param end The end of the included range of MCMC iterations (default=1, i.e. ending with the last iteration).
 ##' @description Plots the edge density for the given group for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
 ##' @export
-edge_density_plot = function(sbfc_result, group, start=0, end=1, ...) {
+edge_density_plot = function(sbfc_result, group, start=0, end=1) {
   n = nrow(sbfc_result$groups)
   edge_den = seq(0, 0, length=n)
   for (i in 1:n) {
@@ -194,7 +196,7 @@ edge_density_plot = function(sbfc_result, group, start=0, end=1, ...) {
     treeset = unique(sbfc_result$trees[i, subset])
     if (length(subset) > 1) edge_den[i] = 1 - (length(treeset)-1)/(length(subset)-1)
   }
-  iteration_plot(edge_den, paste("Edge density in group", group), start, end, ...)
+  iteration_plot(edge_den, paste("Edge density in group", group), start, end)
 }
 
 # scatterplot of edge frequency between pairs of variables vs correlation between those variables in the data set

@@ -19,8 +19,6 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
 \item{single_noise_nodes}{Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).}
 
 \item{labels}{Node labels (default=\code{c("X1","X2",...)}).}
-
-\item{edges_only}{Omit single-node trees (default=FALSE).}
 }
 \description{
 Plots a sampled MCMC graph or an average of sampled graphs.

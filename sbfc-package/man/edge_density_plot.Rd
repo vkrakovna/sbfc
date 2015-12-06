@@ -4,7 +4,7 @@
 \alias{edge_density_plot}
 \title{Plots the density of edges in a given group over the MCMC iterations}
 \usage{
-edge_density_plot(sbfc_result, group, start = 0, end = 1, ...)
+edge_density_plot(sbfc_result, group, start = 0, end = 1)
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}

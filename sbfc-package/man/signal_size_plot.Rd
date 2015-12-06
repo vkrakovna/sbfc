@@ -4,7 +4,7 @@
 \alias{signal_size_plot}
 \title{Trace plot of Group 1 size}
 \usage{
-signal_size_plot(sbfc_result, start = 0, end = 1, samples = F, ...)
+signal_size_plot(sbfc_result, start = 0, end = 1, samples = F)
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}

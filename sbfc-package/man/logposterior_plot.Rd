@@ -2,9 +2,9 @@
 % Please edit documentation in R/sbfc.R
 \name{logposterior_plot}
 \alias{logposterior_plot}
-\title{Log posterior trace plot}
+\title{Log posterior  plot}
 \usage{
-logposterior_plot(sbfc_result, start = 0, end = 1, ...)
+logposterior_plot(sbfc_result, start = 0, end = 1, type = "trace")
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}
@@ -12,6 +12,8 @@ logposterior_plot(sbfc_result, start = 0, end = 1, ...)
 \item{start}{The start of the included range of MCMC iterations (default=0, i.e. starting with the first iteration).}
 
 \item{end}{The end of the included range of MCMC iterations (default=1, i.e. ending with the last iteration).}
+
+\item{type}{Type of plot (either \code{trace} or \code{acf}, default=\code{trace}).}
 }
 \description{
 Plots the log posterior for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
