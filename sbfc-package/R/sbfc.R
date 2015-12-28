@@ -1,26 +1,29 @@
 ##' @useDynLib sbfc
 ##' @importFrom Rcpp evalCpp
+##' @importFrom DiagrammeR grViz
 
 #### SBFC graphs ####
 
-# produces GraphViz code for a graph for a single MCMC sample
-single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F, names=paste0("X", 1:ncol(parents))) {
-  s = 'strict graph G { node[fontname=default shape=circle]'
-  s = paste(s, "node[fontcolor=white fillcolor=dodgerblue3]")
-  for (j in 1:ncol(parents)) {
+# produces Graphviz code for a graph for a single MCMC sample
+single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F, 
+                             names=paste0("X", 1:ncol(parents)), colorscheme="blues", ncolors=7) {
+  s = paste0('digraph G { subgraph cluster_g1 {
+  node [colorscheme=', colorscheme, ncolors, ' color=6, fontcolor=white, style=filled, fontname=default]; label="Group 1";')
+  for (j in ncol(parents):1) {
     if(groups[i, j] == 1)
       s = paste(s, names[j], ";")
+    if(groups[i, j] == 1 && parents[i, j] != 0)
+      s = paste(s, names[parents[i, j]], "->", names[j], ";")
   }
-  s = paste(s, "node[fontcolor=black fillcolor=cadetblue1]")
-  for (j in 1:ncol(parents)) {
+  s = paste0(s, '} subgraph cluster_g0 {
+            node [colorscheme=', colorscheme, ncolors, ' color=2, style=filled, fontname=default]; label="Group 0";')
+  for (j in ncol(parents):1) {
     if((groups[i, j] == 0) && single_noise_nodes)
       s = paste(s, names[j], ";")
+    if(groups[i, j] == 0 && parents[i, j] != 0)
+      s = paste(s, names[parents[i, j]], "->", names[j], ";")
   }
-  for (j in 1:ncol(parents)) {
-    if(parents[i, j] != 0)
-      s = paste(s, names[parents[i, j]], "--", names[j], ";")
-  }
-  s = paste(s, "}")
+  s = paste(s, "}}")
   s
 }
 
@@ -41,56 +44,56 @@ average_sbfc_graph_edges = function(parents, cutoff=0.2, names=paste0("X", 1:nco
   list(s = s, edge_nodes = unique(edge_nodes))
 }
 
-# produces GraphViz code for an average graph over a set of MCMC sample graphs
-average_sbfc_graph = function(groups, parents, cutoff=0.2, single_noise_nodes=F,
-                              names=paste0("X", 1:ncol(parents))) {
-  ncolors=5
+# produces Graphviz code for an average graph over a set of MCMC sample graphs
+average_sbfc_graph = function(groups, parents, edge_cutoff=0.2, single_noise_nodes=F,
+                              names = paste0("X", 1:ncol(parents)), colorscheme="blues", ncolors=7) {
   freq.group1 = apply((groups >= 1 & groups < 3), 2, mean)
   freq.group0 = apply((groups == 0 | groups == 3), 2, mean)
-  ae = average_sbfc_graph_edges(parents, cutoff, names = names)
+  ae = average_sbfc_graph_edges(parents, edge_cutoff, names = names)
   vars = 1:ncol(parents)
   #if (edges_only) vars = ae$edge_nodes
-  if (!single_noise_nodes) vars = unique(c(ae$edge_nodes, which(freq.group1 >= .2)))
+  if (!single_noise_nodes) vars = unique(c(ae$edge_nodes, which(freq.group1 >= .2))) #add parameter
   fontcolor=c(rep("black", floor(ncolors/2)), rep("white", ceiling(ncolors/2)))
   
-  col = c("aliceblue", "cadetblue1", "deepskyblue", "dodgerblue3", "dodgerblue4")
-  s = "strict graph G { node[fontname=default shape=circle] "
+  s = "strict graph G { node[fontname=default] "
   for (i in ncolors:1) {
     for (j in vars) {
-      if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors)) 
-        s = paste(s, names[j], "[fontcolor=", fontcolor[i], "fillcolor=", col[i], "];")
+      if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors))
+        s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " style=filled",
+                   " fontcolor=", fontcolor[i], " color=", i, "];")
     }
   }
   s = paste(s, ae$s, "}")
   s
 }
 
-graphviz_plot = function(gv_source) {
-  requireNamespace('Rgraphviz')
-  require('Rgraphviz')
-  file = tempfile()
-  write(gv_source, file)
-  plot(agread(file))
-}
-
 ##' @title SBFC graph
-##' @description Plots a sampled MCMC graph or an average of sampled graphs.
+##' @description Plots a sampled MCMC graph or an average of sampled graphs using Graphviz.
 ##' @param sbfc_result An object of class \code{sbfc}.
 ##' @param average Plot an average of sampled MCMC graphs (default=TRUE).
 ##' @param iter MCMC iteration of the sampled graph, if \code{average=F} (default=10000).
 ##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2).
 ##' @param single_noise_nodes Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).
 ##' @param labels Node labels (default=\code{c("X1","X2",...)}).
-##' @details If the graph renders poorly in the R plot window, try changing the aspect ratio of the plot window.
+##' @param save_graphviz_code Save the Graphviz source code in a .gv file (default=FALSE).
+##' @param colorscheme \href{http://www.graphviz.org/doc/info/colors.html}{Graphviz color scheme} for the nodes (default="blues").
+##' @param ncolors number of colors in the palette (default=7).
+##' @param width An optional parameter for specifying the width of the resulting graphic in pixels.
+##' @param height An optional parameter for specifying the height of the resulting graphic in pixels.
 ##' @export
-sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.2, single_noise_nodes=F, labels=paste0("X", 1:ncol(sbfc_result$parents))) {
+sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.2, single_noise_nodes=F,
+                      labels=paste0("X", 1:ncol(sbfc_result$parents)), save_graphviz_code = F,
+                      colorscheme="blues", ncolors=7, width=NULL, height=NULL) {
   parents = sbfc_result$parents
   groups = sbfc_result$groups
-  if (average) gv_source = average_sbfc_graph(groups, parents, edge_cutoff, single_noise_nodes, labels)
-  else gv_source = single_sbfc_graph(groups, parents, iter, single_noise_nodes, labels)
-  pdf('testgraph.pdf')
-  graphviz_plot(gv_source)
-  dev.off()
+  if (average)
+    gv_source = average_sbfc_graph(groups, parents, edge_cutoff, single_noise_nodes, labels, colorscheme, ncolors)
+  else 
+    gv_source = single_sbfc_graph(groups, parents, iter, single_noise_nodes, labels, colorscheme, ncolors)
+  if (save_graphviz_code) writeLines(gv_source, "gv_source.gv")
+  if (is.null(width)) 
+    width = 500 + (40 + 10*average) * max(0, length(gregexpr(';', gv_source)[[1]])-2*length(gregexpr(' -', gv_source)[[1]])-30)
+  grViz(gv_source, width=width, height=height)
 }
 
 #### Graph counts and plots ####

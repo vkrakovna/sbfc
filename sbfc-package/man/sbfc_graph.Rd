@@ -5,7 +5,9 @@
 \title{SBFC graph}
 \usage{
 sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
-  single_noise_nodes = F, labels = paste0("X", 1:ncol(sbfc_result$parents)))
+  single_noise_nodes = F, labels = paste0("X", 1:ncol(sbfc_result$parents)),
+  save_graphviz_code = F, colorscheme = "blues", ncolors = 7,
+  width = NULL, height = NULL)
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}
@@ -19,11 +21,18 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
 \item{single_noise_nodes}{Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).}
 
 \item{labels}{Node labels (default=\code{c("X1","X2",...)}).}
+
+\item{save_graphviz_code}{Save the Graphviz source code in a .gv file (default=FALSE).}
+
+\item{colorscheme}{\href{http://www.graphviz.org/doc/info/colors.html}{Graphviz color scheme} for the nodes (default="blues").}
+
+\item{ncolors}{number of colors in the palette (default=7).}
+
+\item{width}{An optional parameter for specifying the width of the resulting graphic in pixels.}
+
+\item{height}{An optional parameter for specifying the height of the resulting graphic in pixels.}
 }
 \description{
-Plots a sampled MCMC graph or an average of sampled graphs.
-}
-\details{
-If the graph renders poorly in the R plot window, try changing the aspect ratio of the plot window.
+Plots a sampled MCMC graph or an average of sampled graphs using Graphviz.
 }
 
