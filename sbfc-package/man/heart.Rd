@@ -15,9 +15,9 @@ data(heart)
 Data set from UCI repository, discretized using the \code{mdlp} package.
 }
 \references{
-\link{https://archive.ics.uci.edu/ml/datasets/Statlog+(Heart)}
+\href{https://archive.ics.uci.edu/ml/datasets/Statlog+(Heart)}{UCI heart data set}
 
-\link{http://www.sgi.com/tech/mlc/db/heart.names}
+\href{http://www.sgi.com/tech/mlc/db/heart.names}{SGI listing for heart data set}
 }
 \keyword{datasets}
 

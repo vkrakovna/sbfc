@@ -18,9 +18,9 @@ Outcomes of chess games given the board descriptions. \cr
 Data set from UCI repository. Training and test splits from SGI.
 }
 \references{
-\link{https://archive.ics.uci.edu/ml/datasets/Chess+(King-Rook+vs.+King-Pawn)}
+\href{https://archive.ics.uci.edu/ml/datasets/Chess+(King-Rook+vs.+King-Pawn)}{UCI chess data set}
 
-\link{http://www.sgi.com/tech/mlc/db/chess.names}
+\href{http://www.sgi.com/tech/mlc/db/chess.names}{SGI listing for chess data set}
 }
 \keyword{datasets}
 

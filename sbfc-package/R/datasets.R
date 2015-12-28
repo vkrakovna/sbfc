@@ -11,8 +11,8 @@
 #' \item{\code{TestX}}{A matrix with 1066 rows and 36 columns.}
 #' \item{\code{TestY}}{A vector with 1066 rows.}
 #' }
-#' @references \link{https://archive.ics.uci.edu/ml/datasets/Chess+(King-Rook+vs.+King-Pawn)}
-#' @references \link{http://www.sgi.com/tech/mlc/db/chess.names}
+#' @references \href{https://archive.ics.uci.edu/ml/datasets/Chess+(King-Rook+vs.+King-Pawn)}{UCI chess data set}
+#' @references \href{http://www.sgi.com/tech/mlc/db/chess.names}{SGI listing for chess data set}
 NULL
 
 #' @docType data
@@ -26,7 +26,7 @@ NULL
 #' \item{\code{TrainX}}{A matrix with 128 rows and 6 columns.}
 #' \item{\code{TrainY}}{A vector with 128 rows.}
 #' }
-#' @references \link{http://www.sgi.com/tech/mlc/db/corral.names}
+#' @references \href{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}
 NULL
 
 #' @docType data
@@ -42,8 +42,8 @@ NULL
 #' \item{\code{TrainX}}{A matrix with 128 rows and 10000 columns.}
 #' \item{\code{TrainY}}{A vector with 128 rows.}
 #' }
-#' @references \link{http://www.sgi.com/tech/mlc/db/corral.names}
-#' @references \link{arxiv.org/abs/1506.02371}
+#' @references \href{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}
+#' @references \href{arxiv.org/abs/1506.02371}{SBFC paper describing augmentation of corral data set}
 NULL
 
 #' @docType data
@@ -56,8 +56,8 @@ NULL
 #' \item{\code{TrainX}}{A matrix with 270 rows and 13 columns.}
 #' \item{\code{TrainY}}{A vector with 270 rows.}
 #' }
-#' @references \link{https://archive.ics.uci.edu/ml/datasets/Statlog+(Heart)}
-#' @references \link{http://www.sgi.com/tech/mlc/db/heart.names}
+#' @references \href{https://archive.ics.uci.edu/ml/datasets/Statlog+(Heart)}{UCI heart data set}
+#' @references \href{http://www.sgi.com/tech/mlc/db/heart.names}{SGI listing for heart data set}
 NULL
 
 #' @docType data
@@ -75,5 +75,5 @@ NULL
 #' \item{\code{TestX}}{A matrix with 600 rows and 500 columns.}
 #' \item{\code{TestY}}{A vector with 600 rows.}
 #' }
-#' @references \link{https://archive.ics.uci.edu/ml/datasets/Madelon}
+#' @references \href{https://archive.ics.uci.edu/ml/datasets/Madelon}{UCI madelon data set}
 NULL

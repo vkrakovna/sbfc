@@ -16,7 +16,7 @@ This is an artificial domain where the target concept is (X1^X2) V (X3^X4). \cr
 Data set by R. Kohavi. Training and test splits from SGI.
 }
 \references{
-\link{http://www.sgi.com/tech/mlc/db/corral.names}
+\href{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}
 }
 \keyword{datasets}
 

@@ -18,9 +18,9 @@ Noise features added by V. Krakovna by shuffling copies of real features.\cr
 The SBFC paper uses subsets of this data set with the first 100 and 1000 features.
 }
 \references{
-\link{http://www.sgi.com/tech/mlc/db/corral.names}
+\href{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}
 
-\link{arxiv.org/abs/1506.02371}
+\href{arxiv.org/abs/1506.02371}{SBFC paper describing augmentation of corral data set}
 }
 \keyword{datasets}
 

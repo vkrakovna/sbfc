@@ -20,7 +20,7 @@ Of the 500 features, 20 are real features, 480 are noise features. \cr
 Data set from UCI repository, discretized using median cutoffs.
 }
 \references{
-\link{https://archive.ics.uci.edu/ml/datasets/Madelon}
+\href{https://archive.ics.uci.edu/ml/datasets/Madelon}{UCI madelon data set}
 }
 \keyword{datasets}
 
