@@ -122,7 +122,7 @@ field<svec> Categories(const smat &X, const unsigned n_var) {
 uvec Level(const svec &vals, const svec &cat) {
 	// assumes the categories (possible values) for each variable are nonnegative integers in increasing order
 	uvec indices(vals.n_elem, fill::zeros);
-	for(uword i=0; i < cat.n_elem - 1; i++)
+	for(uword i=0; i < cat.n_elem; i++)
 		indices += (vals > cat(i));
 	assert (all(vals == cat(indices)));
 	return indices;
@@ -811,7 +811,7 @@ vec LogProbY(const graph &Graph, const counts &Counts, const data &Data, const n
 	unsigned n_units = Parameters.n_units;
 
 	assert(n_units > 0);
-	assert(min(Counts.y) > 0);
+	//assert(min(Counts.y) > 0);
 
 	vec logpost = log(to_vec(Counts.y)) - log(n_units);
 	assert(logpost.n_elem == n_levels.y);
@@ -1251,48 +1251,8 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 	}
 }
 
-
-//' @title
-//' Selective Bayesian Forest Classifier algorithm
-//' @description
-//' Runs the SBFC algorithm on a discretized data set.
-//' 
-//' @param TrainX Matrix containing the training data.
-//' @param TrainY Vector containing the class labels for the training data.
-//' @param TestX Matrix containing the test data, if applicable.
-//' @param TestY Vector containing the class labels for the test data.
-//' @param nstep Number of MCMC steps, default max(10000, 10 * ncol(TrainX)).
-//' @param thin Thinning factor for the MCMC. 
-//' @param burnin_denom Denominator of the fraction of total MCMC steps discarded as burnin (default=5).
-//' @param cv Do cross-validation on the training set (if test set is not provided).
-//' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).
-//' @details
-//' Data needs to be discretized before running SBFC. \cr
-//' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. 
-//' If the test data class vector TestY is provided, the accuracy is computed. 
-//' If the test data matrix TestX is not provided, and cv is set to TRUE, SBFC performs cross-validation on the training data set TrainX, 
-//' and returns predicted classes and accuracy for the training data. \cr
-//' @return An object of class \code{sbfc}:
-//' \describe{     
-//' \item{\code{accuracy}}{Classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set).}
-//' \item{\code{predictions}}{Vector of class label predictions (for the test set if provided, otherwise for the training set).}
-//' \item{\code{probabilities}}{Matrix of class label probabilities (for the test set if provided, otherwise for the training set).}
-//' \item{\code{runtime}}{Total runtime of the algorithm in seconds.}
-//' \item{\code{parents}}{Matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root).}
-//' \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
-//' \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
-//' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
-//' \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
-//' }
-//' @examples
-//' data(chess)
-//' chess_result = sbfc(as.matrix(chess$TrainX), as.integer(chess$TrainY), 
-//'                     as.matrix(chess$TestX), as.integer(chess$TestY))
-//' data(corral)
-//' corral_result = sbfc(as.matrix(corral$TrainX), as.integer(corral$TrainY), cv=FALSE)
-//' @export
 // [[Rcpp::export]]
-List sbfc(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, int thin = 50, int burnin_denom = 5, bool cv = true, bool thinoutputs = false) {
+List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, int thin = 50, int burnin_denom = 5, bool cv = true, bool thinoutputs = false) {
   timeb start, end;
   ftime(&start);
 	data Data;

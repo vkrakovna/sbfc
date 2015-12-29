@@ -2,6 +2,55 @@
 ##' @importFrom Rcpp evalCpp
 ##' @importFrom DiagrammeR grViz
 
+##' @title
+##' Selective Bayesian Forest Classifier algorithm
+##' @description
+##' Runs the SBFC algorithm on a discretized data set.
+##' 
+##' @param data Discretized data set:
+##' \describe{     
+##' \item{\code{TrainX}}{Matrix containing the training data.}
+##' \item{\code{TrainY}}{Vector containing the class labels for the training data.}
+##' \item{\code{TestX}}{Matrix containing the test data (optional).}
+##' \item{\code{TestY}}{Vector containing the class labels for the test data (optional).}
+##' }
+##' @param nstep Number of MCMC steps, default max(10000, 10 * ncol(TrainX)).
+##' @param thin Thinning factor for the MCMC. 
+##' @param burnin_denom Denominator of the fraction of total MCMC steps discarded as burnin (default=5).
+##' @param cv Do cross-validation on the training set (if test set is not provided).
+##' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).
+##' @details
+##' Data needs to be discretized before running SBFC. \cr
+##' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. 
+##' If the test data class vector TestY is provided, the accuracy is computed. 
+##' If the test data matrix TestX is not provided, and cv is set to TRUE, SBFC performs cross-validation on the training data set TrainX, 
+##' and returns predicted classes and accuracy for the training data. \cr
+##' @return An object of class \code{sbfc}:
+##' \describe{     
+  ##' \item{\code{accuracy}}{Classification accuracy (on the test set if provided, otherwise cross-validation accuracy on training set).}
+  ##' \item{\code{predictions}}{Vector of class label predictions (for the test set if provided, otherwise for the training set).}
+  ##' \item{\code{probabilities}}{Matrix of class label probabilities (for the test set if provided, otherwise for the training set).}
+  ##' \item{\code{runtime}}{Total runtime of the algorithm in seconds.}
+  ##' \item{\code{parents}}{Matrix representing the structures sampled by MCMC, where parents[i,j] is the index of the parent of node j at iteration i (0 if node is a root).}
+  ##' \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
+  ##' \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
+  ##' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
+  ##' \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
+  ##' }
+##' @examples
+##' data(chess)
+##' chess_result = sbfc(chess)
+##' data(corral)
+##' corral_result = sbfc(corral, cv=FALSE)
+##' @export
+sbfc = function(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T, thinoutputs = F) {
+  sbfc_cpp(if (is.null(data$TrainX)) NULL else apply(as.matrix(data$TrainX), 2, as.integer), 
+       if (is.null(data$TrainY)) NULL else as.integer(data$TrainY), 
+       if (is.null(data$TestX)) NULL else apply(as.matrix(data$TestX), 2, as.integer), 
+       if (is.null(data$TestY)) NULL else as.integer(data$TestY),
+       nstep, thin, burnin_denom, cv, thinoutputs)
+}
+
 #### SBFC graphs ####
 
 # produces Graphviz code for a graph for a single MCMC sample
