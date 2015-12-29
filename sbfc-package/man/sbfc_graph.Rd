@@ -4,7 +4,7 @@
 \alias{sbfc_graph}
 \title{SBFC graph}
 \usage{
-sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
+sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.1,
   single_noise_nodes = F, labels = paste0("X", 1:ncol(sbfc_result$parents)),
   save_graphviz_code = F, colorscheme = "blues", ncolors = 7,
   width = NULL, height = NULL)
@@ -16,9 +16,9 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
 
 \item{average}{Plot an average of sampled MCMC graphs (default=TRUE).}
 
-\item{edge_cutoff}{The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2).}
+\item{edge_cutoff}{The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.1).}
 
-\item{single_noise_nodes}{Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).}
+\item{single_noise_nodes}{Plot single-node trees that appear in the noise group (Group 0) in at least 80 percent of the samples, which can be numerous for high-dimensional data sets (default=FALSE).}
 
 \item{labels}{Node labels (default=\code{c("X1","X2",...)}).}
 
@@ -33,6 +33,8 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.2,
 \item{height}{An optional parameter for specifying the height of the resulting graphic in pixels.}
 }
 \description{
-Plots a sampled MCMC graph or an average of sampled graphs using Graphviz.
+Plots a sampled MCMC graph or an average of sampled graphs using Graphviz. \cr
+In average graphs, nodes are color-coded according to importance - the proportion of samples where the node appeared in Group 1 (dark-shaded nodes appear more often).
+In average graphs, thickness of edges also corresponds to importance: the proportion of samples where the edge appeared.
 }
 

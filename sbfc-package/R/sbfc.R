@@ -77,7 +77,7 @@ single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F,
 }
 
 # determines a set of edges to include in the average graph
-average_sbfc_graph_edges = function(parents, cutoff=0.2, names=paste0("X", 1:ncol(parents))) {
+average_sbfc_graph_edges = function(parents, cutoff=0.1, names=paste0("X", 1:ncol(parents))) {
   s =""
   edge_nodes = c()
   for (j in 1:ncol(parents)) {
@@ -85,7 +85,7 @@ average_sbfc_graph_edges = function(parents, cutoff=0.2, names=paste0("X", 1:nco
     freq.edge = table(parents[,j])/nrow(parents)
     for (k in 1:length(freq.edge)) {
       if (par[k] > 0 && freq.edge[k] >= cutoff) {
-        s = paste(s, names[par[k]], "--", names[j], ";")
+        s = paste(s, names[par[k]], "--", names[j], " [penwidth=", 5*freq.edge[k], "];")
         edge_nodes = c(edge_nodes, j, par[k])
       }
     }
@@ -94,10 +94,10 @@ average_sbfc_graph_edges = function(parents, cutoff=0.2, names=paste0("X", 1:nco
 }
 
 # produces Graphviz code for an average graph over a set of MCMC sample graphs
-average_sbfc_graph = function(groups, parents, edge_cutoff=0.2, single_noise_nodes=F,
+average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nodes=F,
                               names = paste0("X", 1:ncol(parents)), colorscheme="blues", ncolors=7) {
-  freq.group1 = apply((groups >= 1 & groups < 3), 2, mean)
-  freq.group0 = apply((groups == 0 | groups == 3), 2, mean)
+  freq.group1 = apply((groups == 1), 2, mean)
+  freq.group0 = apply((groups == 0), 2, mean)
   ae = average_sbfc_graph_edges(parents, edge_cutoff, names = names)
   vars = 1:ncol(parents)
   #if (edges_only) vars = ae$edge_nodes
@@ -117,12 +117,14 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.2, single_noise_nod
 }
 
 ##' @title SBFC graph
-##' @description Plots a sampled MCMC graph or an average of sampled graphs using Graphviz.
+##' @description Plots a sampled MCMC graph or an average of sampled graphs using Graphviz. \cr
+##' In average graphs, nodes are color-coded according to importance - the proportion of samples where the node appeared in Group 1 (dark-shaded nodes appear more often).
+##' In average graphs, thickness of edges also corresponds to importance: the proportion of samples where the edge appeared.
 ##' @param sbfc_result An object of class \code{sbfc}.
 ##' @param average Plot an average of sampled MCMC graphs (default=TRUE).
 ##' @param iter MCMC iteration of the sampled graph, if \code{average=F} (default=10000).
-##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.2).
-##' @param single_noise_nodes Plot single-node trees in the noise group (Group 0), which can be numerous for high-dimensional data sets (default=FALSE).
+##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.1).
+##' @param single_noise_nodes Plot single-node trees that appear in the noise group (Group 0) in at least 80 percent of the samples, which can be numerous for high-dimensional data sets (default=FALSE).
 ##' @param labels Node labels (default=\code{c("X1","X2",...)}).
 ##' @param save_graphviz_code Save the Graphviz source code in a .gv file (default=FALSE).
 ##' @param colorscheme \href{http://www.graphviz.org/doc/info/colors.html}{Graphviz color scheme} for the nodes (default="blues").
@@ -130,7 +132,7 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.2, single_noise_nod
 ##' @param width An optional parameter for specifying the width of the resulting graphic in pixels.
 ##' @param height An optional parameter for specifying the height of the resulting graphic in pixels.
 ##' @export
-sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.2, single_noise_nodes=F,
+sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, single_noise_nodes=F,
                       labels=paste0("X", 1:ncol(sbfc_result$parents)), save_graphviz_code = F,
                       colorscheme="blues", ncolors=7, width=NULL, height=NULL) {
   parents = sbfc_result$parents
