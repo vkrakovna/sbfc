@@ -12,7 +12,7 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.1,
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}
 
-\item{iter}{MCMC iteration of the sampled graph, if \code{average=F} (default=10000).}
+\item{iter}{MCMC iteration of the sampled graph to plot, if \code{average=F} (default=10000).}
 
 \item{average}{Plot an average of sampled MCMC graphs (default=TRUE).}
 
@@ -36,5 +36,19 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.1,
 Plots a sampled MCMC graph or an average of sampled graphs using Graphviz. \cr
 In average graphs, nodes are color-coded according to importance - the proportion of samples where the node appeared in Group 1 (dark-shaded nodes appear more often).
 In average graphs, thickness of edges also corresponds to importance: the proportion of samples where the edge appeared.
+}
+\examples{
+data(madelon)
+madelon_result = sbfc(madelon)
+sbfc_graph(madelon_result) 
+sbfc_graph(madelon_result, average=FALSE, iter=5000) # graph for 5000th iteration
+sbfc_graph(madelon_result, single_noise_nodes=TRUE) # makes a wide graph with 480 single nodes
+
+data(heart)
+heart_result = sbfc(heart)
+heart_labels = c("Age", "Sex", "Chest\\nPain", "Rest\\nBlood\\nPressure", "Cholesterol", 
+"Blood\\nSugar", "Rest\\nECG", "Max\\nHeart\\nRate", "Angina", "ST\\nDepression", "ST\\nSlope",
+"Fluoroscopy\\nColored\\nVessels", "Thalassemia")
+sbfc_graph(heart_result, labels=heart_labels, width=700)
 }
 

@@ -85,7 +85,7 @@ average_sbfc_graph_edges = function(parents, cutoff=0.1, names=paste0("X", 1:nco
     freq.edge = table(parents[,j])/nrow(parents)
     for (k in 1:length(freq.edge)) {
       if (par[k] > 0 && freq.edge[k] >= cutoff) {
-        s = paste(s, names[par[k]], "--", names[j], " [penwidth=", 5*freq.edge[k], "];")
+        s = paste0(s, " \"", names[par[k]], "\" -- \"", names[j], "\" [penwidth=", 5*freq.edge[k], "];")
         edge_nodes = c(edge_nodes, j, par[k])
       }
     }
@@ -108,7 +108,7 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nod
   for (i in ncolors:1) {
     for (j in vars) {
       if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors))
-        s = paste0(s, " \"", names[j], "\"[colorscheme=", colorscheme, ncolors, " style=filled",
+        s = paste0(s, " \"", names[j], "\" [colorscheme=", colorscheme, ncolors, " style=filled",
                    " fontcolor=", fontcolor[i], " color=", i, "];")
     }
   }
@@ -122,7 +122,7 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nod
 ##' In average graphs, thickness of edges also corresponds to importance: the proportion of samples where the edge appeared.
 ##' @param sbfc_result An object of class \code{sbfc}.
 ##' @param average Plot an average of sampled MCMC graphs (default=TRUE).
-##' @param iter MCMC iteration of the sampled graph, if \code{average=F} (default=10000).
+##' @param iter MCMC iteration of the sampled graph to plot, if \code{average=F} (default=10000).
 ##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.1).
 ##' @param single_noise_nodes Plot single-node trees that appear in the noise group (Group 0) in at least 80 percent of the samples, which can be numerous for high-dimensional data sets (default=FALSE).
 ##' @param labels Node labels (default=\code{c("X1","X2",...)}).
@@ -131,6 +131,19 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nod
 ##' @param ncolors number of colors in the palette (default=7).
 ##' @param width An optional parameter for specifying the width of the resulting graphic in pixels.
 ##' @param height An optional parameter for specifying the height of the resulting graphic in pixels.
+##' @examples
+##' data(madelon)
+##' madelon_result = sbfc(madelon)
+##' sbfc_graph(madelon_result) 
+##' sbfc_graph(madelon_result, average=FALSE, iter=5000) # graph for 5000th iteration
+##' sbfc_graph(madelon_result, single_noise_nodes=TRUE) # makes a wide graph with 480 single nodes
+##' 
+##' data(heart)
+##' heart_result = sbfc(heart)
+##' heart_labels = c("Age", "Sex", "Chest\nPain", "Rest\nBlood\nPressure", "Cholesterol", 
+##' "Blood\nSugar", "Rest\nECG", "Max\nHeart\nRate", "Angina", "ST\nDepression", "ST\nSlope",
+##' "Fluoroscopy\nColored\nVessels", "Thalassemia")
+##' sbfc_graph(heart_result, labels=heart_labels, width=700)
 ##' @export
 sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, single_noise_nodes=F,
                       labels=paste0("X", 1:ncol(sbfc_result$parents)), save_graphviz_code = F,

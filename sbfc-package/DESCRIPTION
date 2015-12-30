@@ -15,7 +15,7 @@ License: GPL (>= 2)
 Depends: R (>= 2.10)
 Imports:
     Rcpp (>= 0.12.2),
-    RcppArmadillo
+    DiagrammeR
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 5.0.1
 LazyData: true
