@@ -20,7 +20,7 @@ sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.1,
 
 \item{single_noise_nodes}{Plot single-node trees that appear in the noise group (Group 0) in at least 80 percent of the samples, which can be numerous for high-dimensional data sets (default=FALSE).}
 
-\item{labels}{Node labels (default=\code{c("X1","X2",...)}).}
+\item{labels}{A vector of node labels (default=\code{c("X1","X2",...)}).}
 
 \item{save_graphviz_code}{Save the Graphviz source code in a .gv file (default=FALSE).}
 

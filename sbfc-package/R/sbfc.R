@@ -1,6 +1,7 @@
 ##' @useDynLib sbfc
 ##' @importFrom Rcpp evalCpp
 ##' @importFrom DiagrammeR grViz
+##' @importFrom Matrix sparseMatrix
 
 ##' @title
 ##' Selective Bayesian Forest Classifier algorithm
@@ -78,16 +79,29 @@ single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F,
 
 # determines a set of edges to include in the average graph
 average_sbfc_graph_edges = function(parents, cutoff=0.1, names=paste0("X", 1:ncol(parents))) {
-  s =""
-  edge_nodes = c()
+  j1=c(); j2=c(); freq=c();
   for (j in 1:ncol(parents)) {
     par = sort(unique(parents[,j]))
-    freq.edge = table(parents[,j])/nrow(parents)
-    for (k in 1:length(freq.edge)) {
-      if (par[k] > 0 && freq.edge[k] >= cutoff) {
-        s = paste0(s, " \"", names[par[k]], "\" -- \"", names[j], "\" [penwidth=", 5*freq.edge[k], "];")
-        edge_nodes = c(edge_nodes, j, par[k])
-      }
+    freq_edge = table(parents[,j])/nrow(parents)
+    stopifnot(length(par) == length(freq_edge))
+    if (par[1] == 0) {
+      if (length(par) == 1) next
+      par = par[-1]
+      freq_edge = freq_edge[-1]
+    }
+    j1 = c(j1, rep(j, length(par)), par)
+    j2 = c(j2, par, rep(j, length(par)))
+    freq = c(freq, freq_edge, freq_edge)
+  }
+  stopifnot(length(j1) == length(j2), length(j1) == length(freq))
+  freq_mat = sparseMatrix(i=j1, j=j2, x=freq)
+  mat = cbind(freq_mat@i+1, rep(seq_along(diff(freq_mat@p)), diff(freq_mat@p)), freq_mat@x)
+  s =""
+  edge_nodes = c()
+  for (i in 1:nrow(mat)) {
+    if ((mat[i, 1] < mat[i, 2]) && (mat[i, 3] >= cutoff)) {
+      edge_nodes = c(edge_nodes, mat[i, 1], mat[i, 2])
+      s = paste0(s, " \"", names[mat[i, 1]], "\" -- \"", names[mat[i, 2]], "\" [penwidth=", 5*mat[i, 3], "];")
     }
   }
   list(s = s, edge_nodes = unique(edge_nodes))
@@ -125,7 +139,7 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nod
 ##' @param iter MCMC iteration of the sampled graph to plot, if \code{average=F} (default=10000).
 ##' @param edge_cutoff The average graph includes edges that appear in at least this fraction of the sampled graphs, if \code{average=T} (default=0.1).
 ##' @param single_noise_nodes Plot single-node trees that appear in the noise group (Group 0) in at least 80 percent of the samples, which can be numerous for high-dimensional data sets (default=FALSE).
-##' @param labels Node labels (default=\code{c("X1","X2",...)}).
+##' @param labels A vector of node labels (default=\code{c("X1","X2",...)}).
 ##' @param save_graphviz_code Save the Graphviz source code in a .gv file (default=FALSE).
 ##' @param colorscheme \href{http://www.graphviz.org/doc/info/colors.html}{Graphviz color scheme} for the nodes (default="blues").
 ##' @param ncolors number of colors in the palette (default=7).
@@ -150,6 +164,7 @@ sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, singl
                       colorscheme="blues", ncolors=7, width=NULL, height=NULL) {
   parents = sbfc_result$parents
   groups = sbfc_result$groups
+  if (length(labels) != ncol(parents)) stop("Size of label vector must be equal to number of variables.")
   if (average)
     gv_source = average_sbfc_graph(groups, parents, edge_cutoff, single_noise_nodes, labels, colorscheme, ncolors)
   else 
