@@ -2,11 +2,45 @@
 ##' @importFrom Rcpp evalCpp
 ##' @importFrom DiagrammeR grViz
 ##' @importFrom Matrix sparseMatrix
+##' @importFrom discretization mdlp
+
+##' @title Data set discretization and formatting for SBFC algorithm.
+##' @description Removes rows containing missing data, and discretizes the data set using Minimum Description Length Partitioning (MDLP).
+##' @param data Data frame, where the last column must be the class variable.
+##' @param n_train Number of data frame rows to use as the training set - the rest are used for the test set. If NULL, all rows are used for training, and there is no test set (default=NULL).
+##' @param missing Label that denotes missing values in your data frame (default='?').
+##' @return A discretized data set:
+##' \describe{     
+##' \item{\code{TrainX}}{Matrix containing the training data.}
+##' \item{\code{TrainY}}{Vector containing the class labels for the training data.}
+##' \item{\code{TestX}}{Matrix containing the test data (optional).}
+##' \item{\code{TestY}}{Vector containing the class labels for the test data (optional).}
+##' }
+##' @export
+data_disc = function(data, n_train = NULL, missing = '?') {
+  for (i in 1:ncol(data)) { 
+    mrows = grep(missing, data[,i], fixed=T)
+    if (length(mrows) > 0) data = data[-mrows,] # remove missing rows
+    if (!is.null(n_train)) n_train = n_train - sum(mrows <= n_train)
+  }
+  for (i in 1:ncol(data)) data[,i] = as.numeric(data[,i])
+  data = mdlp(data)$Disc.data
+  if (is.null(n_train)) n_train = nrow(data)
+
+  data_disc = list()
+  data_disc$TrainY = data[1:n_train,ncol(data)]
+  data_disc$TrainX = data[1:n_train,-ncol(data)]
+  if (n_train < nrow(data)) {
+    data_disc$TestY = data[(n_train+1):nrow(data),ncol(data)]
+    data_disc$TestX = data[(n_train+1):nrow(data),-ncol(data)]
+  }
+  data_disc
+}
 
 ##' @title
 ##' Selective Bayesian Forest Classifier algorithm
 ##' @description
-##' Runs the SBFC algorithm on a discretized data set.
+##' Runs the SBFC algorithm on a discretized data set. To discretize your data, use the \code{\link{data_disc}} command.
 ##' 
 ##' @param data Discretized data set:
 ##' \describe{     

@@ -41,7 +41,7 @@ An object of class \code{sbfc}:
 }
 }
 \description{
-Runs the SBFC algorithm on a discretized data set.
+Runs the SBFC algorithm on a discretized data set. To discretize your data, use the \code{\link{data_disc}} command.
 }
 \details{
 Data needs to be discretized before running SBFC. \cr
