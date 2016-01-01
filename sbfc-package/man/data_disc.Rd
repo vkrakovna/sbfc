@@ -2,7 +2,7 @@
 % Please edit documentation in R/sbfc.R
 \name{data_disc}
 \alias{data_disc}
-\title{Data set discretization and formatting for SBFC algorithm.}
+\title{Data set discretization and formatting}
 \usage{
 data_disc(data, n_train = NULL, missing = "?")
 }
@@ -24,5 +24,9 @@ A discretized data set:
 }
 \description{
 Removes rows containing missing data, and discretizes the data set using Minimum Description Length Partitioning (MDLP).
+}
+\examples{
+data(iris)
+iris_disc = data_disc(iris)
 }
 

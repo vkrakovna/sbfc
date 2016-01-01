@@ -2,7 +2,7 @@
 % Please edit documentation in R/sbfc.R
 \name{sbfc}
 \alias{sbfc}
-\title{Selective Bayesian Forest Classifier algorithm}
+\title{Selective Bayesian Forest Classifier (SBFC) algorithm}
 \usage{
 sbfc(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T,
   thinoutputs = F)
@@ -39,6 +39,7 @@ An object of class \code{sbfc}:
 \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
 \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
 }
+If \code{cv=TRUE}, the MCMC samples from the first fold are returned (\code{parents}, \code{groups}, \code{trees}, \code{logposterior}).
 }
 \description{
 Runs the SBFC algorithm on a discretized data set. To discretize your data, use the \code{\link{data_disc}} command.
@@ -51,9 +52,9 @@ If the test data matrix TestX is not provided, and cv is set to TRUE, SBFC perfo
 and returns predicted classes and accuracy for the training data. \cr
 }
 \examples{
-data(chess)
-chess_result = sbfc(chess)
-data(corral)
-corral_result = sbfc(corral, cv=FALSE)
+data(madelon)
+madelon_result = sbfc(madelon)
+data(heart)
+hearat_result = sbfc(heart, cv=FALSE)
 }
 

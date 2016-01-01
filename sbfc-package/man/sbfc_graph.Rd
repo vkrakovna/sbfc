@@ -42,13 +42,13 @@ data(madelon)
 madelon_result = sbfc(madelon)
 sbfc_graph(madelon_result) 
 sbfc_graph(madelon_result, average=FALSE, iter=5000) # graph for 5000th iteration
-sbfc_graph(madelon_result, single_noise_nodes=TRUE) # makes a wide graph with 480 single nodes
+sbfc_graph(madelon_result, single_noise_nodes=TRUE) # wide graph with 480 single nodes
 
 data(heart)
 heart_result = sbfc(heart)
-heart_labels = c("Age", "Sex", "Chest\\nPain", "Rest\\nBlood\\nPressure", "Cholesterol", 
-"Blood\\nSugar", "Rest\\nECG", "Max\\nHeart\\nRate", "Angina", "ST\\nDepression", "ST\\nSlope",
-"Fluoroscopy\\nColored\\nVessels", "Thalassemia")
+heart_labels = c("Age", "Sex", "Chest Pain", "Rest Blood Pressure", "Cholesterol", 
+"Blood Sugar", "Rest ECG", "Max Heart Rate", "Angina", "ST Depression", "ST Slope",
+"Fluoroscopy Colored Vessels", "Thalassemia")
 sbfc_graph(heart_result, labels=heart_labels, width=700)
 }
 

@@ -4,7 +4,7 @@
 ##' @importFrom Matrix sparseMatrix
 ##' @importFrom discretization mdlp
 
-##' @title Data set discretization and formatting for SBFC algorithm.
+##' @title Data set discretization and formatting
 ##' @description Removes rows containing missing data, and discretizes the data set using Minimum Description Length Partitioning (MDLP).
 ##' @param data Data frame, where the last column must be the class variable.
 ##' @param n_train Number of data frame rows to use as the training set - the rest are used for the test set. If NULL, all rows are used for training, and there is no test set (default=NULL).
@@ -16,6 +16,8 @@
 ##' \item{\code{TestX}}{Matrix containing the test data (optional).}
 ##' \item{\code{TestY}}{Vector containing the class labels for the test data (optional).}
 ##' }
+##' @examples data(iris)
+##' iris_disc = data_disc(iris)
 ##' @export
 data_disc = function(data, n_train = NULL, missing = '?') {
   for (i in 1:ncol(data)) { 
@@ -38,7 +40,7 @@ data_disc = function(data, n_train = NULL, missing = '?') {
 }
 
 ##' @title
-##' Selective Bayesian Forest Classifier algorithm
+##' Selective Bayesian Forest Classifier (SBFC) algorithm
 ##' @description
 ##' Runs the SBFC algorithm on a discretized data set. To discretize your data, use the \code{\link{data_disc}} command.
 ##' 
@@ -72,11 +74,12 @@ data_disc = function(data, n_train = NULL, missing = '?') {
   ##' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
   ##' \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
   ##' }
+  ##' If \code{cv=TRUE}, the MCMC samples from the first fold are returned (\code{parents}, \code{groups}, \code{trees}, \code{logposterior}).
 ##' @examples
-##' data(chess)
-##' chess_result = sbfc(chess)
-##' data(corral)
-##' corral_result = sbfc(corral, cv=FALSE)
+##' data(madelon)
+##' madelon_result = sbfc(madelon)
+##' data(heart)
+##' hearat_result = sbfc(heart, cv=FALSE)
 ##' @export
 sbfc = function(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T, thinoutputs = F) {
   sbfc_cpp(if (is.null(data$TrainX)) NULL else apply(as.matrix(data$TrainX), 2, as.integer), 
@@ -92,7 +95,7 @@ sbfc = function(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T, thinout
 single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F, 
                              names=paste0("X", 1:ncol(parents)), colorscheme="blues", ncolors=7) {
   s = paste0('digraph G { subgraph cluster_g1 {
-  node [colorscheme=', colorscheme, ncolors, ' color=6, fontcolor=white, style=filled, fontname=default]; label="Group 1";')
+  node [colorscheme=', colorscheme, ncolors, ' color=6, fontcolor=white, style=filled, fontname=Arial]; label="Group 1";')
   for (j in ncol(parents):1) {
     if(groups[i, j] == 1)
       s = paste(s, names[j], ";")
@@ -100,7 +103,7 @@ single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F,
       s = paste(s, names[parents[i, j]], "->", names[j], ";")
   }
   s = paste0(s, '} subgraph cluster_g0 {
-            node [colorscheme=', colorscheme, ncolors, ' color=2, style=filled, fontname=default]; label="Group 0";')
+            node [colorscheme=', colorscheme, ncolors, ' color=2, style=filled, fontname=Arial]; label="Group 0";')
   for (j in ncol(parents):1) {
     if((groups[i, j] == 0) && single_noise_nodes)
       s = paste(s, names[j], ";")
@@ -152,11 +155,11 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nod
   if (!single_noise_nodes) vars = unique(c(ae$edge_nodes, which(freq.group1 >= .2))) #add parameter
   fontcolor=c(rep("black", floor(ncolors/2)), rep("white", ceiling(ncolors/2)))
   
-  s = "strict graph G { node[fontname=default] "
+  s = "strict graph G { node[fontname=Arial style=filled] "
   for (i in ncolors:1) {
     for (j in vars) {
       if ((freq.group1[j] >= (i-1)*1.0/ncolors) && (freq.group1[j] <= i*1.0/ncolors))
-        s = paste0(s, " \"", names[j], "\" [colorscheme=", colorscheme, ncolors, " style=filled",
+        s = paste0(s, " \"", names[j], "\" [colorscheme=", colorscheme, ncolors,
                    " fontcolor=", fontcolor[i], " color=", i, "];")
     }
   }
@@ -184,13 +187,13 @@ average_sbfc_graph = function(groups, parents, edge_cutoff=0.1, single_noise_nod
 ##' madelon_result = sbfc(madelon)
 ##' sbfc_graph(madelon_result) 
 ##' sbfc_graph(madelon_result, average=FALSE, iter=5000) # graph for 5000th iteration
-##' sbfc_graph(madelon_result, single_noise_nodes=TRUE) # makes a wide graph with 480 single nodes
+##' sbfc_graph(madelon_result, single_noise_nodes=TRUE) # wide graph with 480 single nodes
 ##' 
 ##' data(heart)
 ##' heart_result = sbfc(heart)
-##' heart_labels = c("Age", "Sex", "Chest\nPain", "Rest\nBlood\nPressure", "Cholesterol", 
-##' "Blood\nSugar", "Rest\nECG", "Max\nHeart\nRate", "Angina", "ST\nDepression", "ST\nSlope",
-##' "Fluoroscopy\nColored\nVessels", "Thalassemia")
+##' heart_labels = c("Age", "Sex", "Chest Pain", "Rest Blood Pressure", "Cholesterol", 
+##' "Blood Sugar", "Rest ECG", "Max Heart Rate", "Angina", "ST Depression", "ST Slope",
+##' "Fluoroscopy Colored Vessels", "Thalassemia")
 ##' sbfc_graph(heart_result, labels=heart_labels, width=700)
 ##' @export
 sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, single_noise_nodes=F,
@@ -199,11 +202,12 @@ sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, singl
   parents = sbfc_result$parents
   groups = sbfc_result$groups
   if (length(labels) != ncol(parents)) stop("Size of label vector must be equal to number of variables.")
+  labels = gsub(" ", "\n", labels)
   if (average)
     gv_source = average_sbfc_graph(groups, parents, edge_cutoff, single_noise_nodes, labels, colorscheme, ncolors)
   else 
     gv_source = single_sbfc_graph(groups, parents, iter, single_noise_nodes, labels, colorscheme, ncolors)
-  if (save_graphviz_code) writeLines(gv_source, "gv_source.gv")
+  if (save_graphviz_code) writeLines(gv_source, "sbfc_graph_code.gv")
   if (is.null(width)) 
     width = 500 + (40 + 10*average) * max(0, length(gregexpr(';', gv_source)[[1]])-2*length(gregexpr(' -', gv_source)[[1]])-30)
   grViz(gv_source, width=width, height=height)

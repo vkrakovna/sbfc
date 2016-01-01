@@ -76,22 +76,19 @@ LazyData: & true\\{}
 
 Index of help topics:
 \begin{alltt}
-chess                   Chess End-Game - King+Rook versus King+Pawn on
-                        a7
-corral                  Corral: synthetic data with correlated
-                        attributes
-corral_augmented        Augmented corral: synthetic data with
+corral_augmented        Augmented corral data set: synthetic data with
                         correlated attributes augmented with noise
                         features
-data_disc               Data set discretization and formatting for SBFC
-                        algorithm.
+data_disc               Data set discretization and formatting
 edge_density_plot       Plots the density of edges in a given group
                         over the MCMC iterations
-heart                   Heart disease outcomes given health attributes
+heart                   Heart disease data set: disease outcomes given
+                        health attributes
 logposterior_plot       Log posterior plot
-madelon                 Madelon: synthetic data set from NIPS 2003
+madelon                 Madelon data set: synthetic data from NIPS 2003
                         feature selection challenge
-sbfc                    Selective Bayesian Forest Classifier algorithm
+sbfc                    Selective Bayesian Forest Classifier (SBFC)
+                        algorithm
 sbfc-package            Selective Bayesian Forest Classifier
 sbfc_graph              SBFC graph
 signal_size_plot        Trace plot of Group 1 size
@@ -108,71 +105,14 @@ Viktoriya Krakovna
 Maintainer: Viktoriya Krakovna <vkrakovna@gmail.com>
 \end{Author}
 \inputencoding{utf8}
-\HeaderA{chess}{Chess End-Game - King+Rook versus King+Pawn on a7}{chess}
-\keyword{datasets}{chess}
-%
-\begin{Description}\relax
-Outcomes of chess games given the board descriptions. \\{}
-Data set from UCI repository. Training and test splits from SGI.
-\end{Description}
-%
-\begin{Usage}
-\begin{verbatim}
-data(chess)
-\end{verbatim}
-\end{Usage}
-%
-\begin{Format}
-\begin{description}
-
-\item[\code{TrainX}] A matrix with 2130 rows and 36 columns.
-\item[\code{TrainY}] A vector with 2130 rows.
-\item[\code{TestX}] A matrix with 1066 rows and 36 columns.
-\item[\code{TestY}] A vector with 1066 rows.
-
-\end{description}
-\end{Format}
-%
-\begin{References}\relax
-\Rhref{https://archive.ics.uci.edu/ml/datasets/Chess+(King-Rook+vs.+King-Pawn)}{UCI chess data set}
-
-\Rhref{http://www.sgi.com/tech/mlc/db/chess.names}{SGI listing for chess data set}
-\end{References}
-\inputencoding{utf8}
-\HeaderA{corral}{Corral: synthetic data with correlated attributes}{corral}
-\keyword{datasets}{corral}
-%
-\begin{Description}\relax
-This is an artificial domain where the target concept is (X1\textasciicircum{}X2) V (X3\textasciicircum{}X4). \\{}
-Data set by R. Kohavi. Training and test splits from SGI.
-\end{Description}
-%
-\begin{Usage}
-\begin{verbatim}
-data(corral)
-\end{verbatim}
-\end{Usage}
-%
-\begin{Format}
-\begin{description}
-
-\item[\code{TrainX}] A matrix with 128 rows and 6 columns.
-\item[\code{TrainY}] A vector with 128 rows.
-
-\end{description}
-\end{Format}
-%
-\begin{References}\relax
-\Rhref{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}
-\end{References}
-\inputencoding{utf8}
-\HeaderA{corral\_augmented}{Augmented corral: synthetic data with correlated attributes augmented with noise features}{corral.Rul.augmented}
+\HeaderA{corral\_augmented}{Augmented corral data set: synthetic data with correlated attributes augmented with noise features}{corral.Rul.augmented}
 \keyword{datasets}{corral\_augmented}
 %
 \begin{Description}\relax
 This is an artificial domain where the target concept is (X1\textasciicircum{}X2) V (X3\textasciicircum{}X4). \\{}
 Data set by R. Kohavi. Training and test splits from SGI. \\{}
-Noise features added by V. Krakovna by shuffling copies of real features.\\{}
+The first 6 features are the real features from the original corral data set.
+The rest are noise features added by V. Krakovna by shuffling copies of real features.\\{}
 The SBFC paper uses subsets of this data set with the first 100 and 1000 features.
 \end{Description}
 %
@@ -196,8 +136,17 @@ data(corral_augmented)
 
 \Rhref{arxiv.org/abs/1506.02371}{SBFC paper describing augmentation of corral data set}
 \end{References}
+%
+\begin{Examples}
+\begin{ExampleCode}
+corral_result = sbfc(data=list(TrainX=corral_augmented$TrainX[,1:6],
+                                         TrainY = corral_augmented$TrainY))
+corral100_result = sbfc(data=list(TrainX=corral_augmented$TrainX[,1:100], 
+                                  TrainY = corral_augmented$TrainY))
+\end{ExampleCode}
+\end{Examples}
 \inputencoding{utf8}
-\HeaderA{data\_disc}{Data set discretization and formatting for SBFC algorithm.}{data.Rul.disc}
+\HeaderA{data\_disc}{Data set discretization and formatting}{data.Rul.disc}
 %
 \begin{Description}\relax
 Removes rows containing missing data, and discretizes the data set using Minimum Description Length Partitioning (MDLP).
@@ -231,6 +180,13 @@ A discretized data set:
 \end{description}
 
 \end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+data(iris)
+iris_disc = data_disc(iris)
+\end{ExampleCode}
+\end{Examples}
 \inputencoding{utf8}
 \HeaderA{edge\_density\_plot}{Plots the density of edges in a given group over the MCMC iterations}{edge.Rul.density.Rul.plot}
 %
@@ -256,7 +212,7 @@ edge_density_plot(sbfc_result, group, start = 0, end = 1)
 \end{ldescription}
 \end{Arguments}
 \inputencoding{utf8}
-\HeaderA{heart}{Heart disease outcomes given health attributes}{heart}
+\HeaderA{heart}{Heart disease data set: disease outcomes given health attributes}{heart}
 \keyword{datasets}{heart}
 %
 \begin{Description}\relax
@@ -308,7 +264,7 @@ logposterior_plot(sbfc_result, start = 0, end = 1, type = "trace")
 \end{ldescription}
 \end{Arguments}
 \inputencoding{utf8}
-\HeaderA{madelon}{Madelon: synthetic data set from NIPS 2003 feature selection challenge}{madelon}
+\HeaderA{madelon}{Madelon data set: synthetic data from NIPS 2003 feature selection challenge}{madelon}
 \keyword{datasets}{madelon}
 %
 \begin{Description}\relax
@@ -339,7 +295,7 @@ data(madelon)
 \Rhref{https://archive.ics.uci.edu/ml/datasets/Madelon}{UCI madelon data set}
 \end{References}
 \inputencoding{utf8}
-\HeaderA{sbfc}{Selective Bayesian Forest Classifier algorithm}{sbfc}
+\HeaderA{sbfc}{Selective Bayesian Forest Classifier (SBFC) algorithm}{sbfc}
 %
 \begin{Description}\relax
 Runs the SBFC algorithm on a discretized data set. To discretize your data, use the \code{\LinkA{data\_disc}{data.Rul.disc}} command.
@@ -401,14 +357,15 @@ An object of class \code{sbfc}:
 
 \end{description}
 
+If \code{cv=TRUE}, the MCMC samples from the first fold are returned (\code{parents}, \code{groups}, \code{trees}, \code{logposterior}).
 \end{Value}
 %
 \begin{Examples}
 \begin{ExampleCode}
-data(chess)
-chess_result = sbfc(chess)
-data(corral)
-corral_result = sbfc(corral, cv=FALSE)
+data(madelon)
+madelon_result = sbfc(madelon)
+data(heart)
+hearat_result = sbfc(heart, cv=FALSE)
 \end{ExampleCode}
 \end{Examples}
 \inputencoding{utf8}
@@ -461,13 +418,13 @@ data(madelon)
 madelon_result = sbfc(madelon)
 sbfc_graph(madelon_result) 
 sbfc_graph(madelon_result, average=FALSE, iter=5000) # graph for 5000th iteration
-sbfc_graph(madelon_result, single_noise_nodes=TRUE) # makes a wide graph with 480 single nodes
+sbfc_graph(madelon_result, single_noise_nodes=TRUE) # wide graph with 480 single nodes
 
 data(heart)
 heart_result = sbfc(heart)
-heart_labels = c("Age", "Sex", "Chest\nPain", "Rest\nBlood\nPressure", "Cholesterol", 
-"Blood\nSugar", "Rest\nECG", "Max\nHeart\nRate", "Angina", "ST\nDepression", "ST\nSlope",
-"Fluoroscopy\nColored\nVessels", "Thalassemia")
+heart_labels = c("Age", "Sex", "Chest Pain", "Rest Blood Pressure", "Cholesterol", 
+"Blood Sugar", "Rest ECG", "Max Heart Rate", "Angina", "ST Depression", "ST Slope",
+"Fluoroscopy Colored Vessels", "Thalassemia")
 sbfc_graph(heart_result, labels=heart_labels, width=700)
 \end{ExampleCode}
 \end{Examples}

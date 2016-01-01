@@ -3,7 +3,7 @@
 \docType{data}
 \name{corral_augmented}
 \alias{corral_augmented}
-\title{Augmented corral: synthetic data with correlated attributes augmented with noise features}
+\title{Augmented corral data set: synthetic data with correlated attributes augmented with noise features}
 \format{\describe{
 \item{\code{TrainX}}{A matrix with 128 rows and 10000 columns.}
 \item{\code{TrainY}}{A vector with 128 rows.}
@@ -14,8 +14,15 @@ data(corral_augmented)
 \description{
 This is an artificial domain where the target concept is (X1^X2) V (X3^X4). \cr
 Data set by R. Kohavi. Training and test splits from SGI. \cr
-Noise features added by V. Krakovna by shuffling copies of real features.\cr
+The first 6 features are the real features from the original corral data set.
+The rest are noise features added by V. Krakovna by shuffling copies of real features.\cr
 The SBFC paper uses subsets of this data set with the first 100 and 1000 features.
+}
+\examples{
+corral_result = sbfc(data=list(TrainX=corral_augmented$TrainX[,1:6],
+                                         TrainY = corral_augmented$TrainY))
+corral100_result = sbfc(data=list(TrainX=corral_augmented$TrainX[,1:100], 
+                                  TrainY = corral_augmented$TrainY))
 }
 \references{
 \href{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}

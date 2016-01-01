@@ -3,7 +3,7 @@
 \docType{data}
 \name{madelon}
 \alias{madelon}
-\title{Madelon: synthetic data set from NIPS 2003 feature selection challenge}
+\title{Madelon data set: synthetic data from NIPS 2003 feature selection challenge}
 \format{\describe{
 \item{\code{TrainX}}{A matrix with 2000 rows and 500 columns.}
 \item{\code{TrainY}}{A vector with 2000 rows.}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/W32TeX) (preloaded format=pdflatex 2015.12.27)  31 DEC 2015 16:52
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/W32TeX) (preloaded format=pdflatex 2015.12.27)  1 JAN 2016 15:07
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -743,9 +743,6 @@ File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
 ) [3]
 (c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
-)
-(c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
-File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
 ) [4]
 (c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
@@ -758,58 +755,52 @@ File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
 ) [5]
 (c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
-)
-(c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
-File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
 ) [6]
-Underfull \hbox (badness 10000) in paragraph at lines 381--386
+Underfull \hbox (badness 10000) in paragraph at lines 337--342
 
  []
 
-[7] (c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
+
+Overfull \hbox (26.97804pt too wide) in paragraph at lines 360--361
+[]\T1/ptm/m/n/10 If \T1/zi4/m/n/10 cv=TRUE\T1/ptm/m/n/10 , the MCMC sam-ples fr
+om the first fold are re-turned (\T1/zi4/m/n/10 parents\T1/ptm/m/n/10 , \T1/zi4
+/m/n/10 groups\T1/ptm/m/n/10 , \T1/zi4/m/n/10 trees\T1/ptm/m/n/10 , \T1/zi4/m/n
+/10 logposterior\T1/ptm/m/n/10 ). 
+ []
+
+(c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
+File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
+) [7]
+(c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
 ) [8]
-Overfull \hbox (18.78094pt too wide) in paragraph at lines 464--464
- []\T1/zi4/m/n/9 sbfc_graph(madelon_result, single_noise_nodes=TRUE) # makes a 
-wide graph with 480 single nodes[] 
- []
-
-
-Overfull \hbox (0.78091pt too wide) in paragraph at lines 469--469
- []\T1/zi4/m/n/9 "Blood\nSugar", "Rest\nECG", "Max\nHeart\nRate", "Angina", "ST
-\nDepression", "ST\nSlope",[] 
- []
-
 (c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
 )
-(c:/texlive/2015/texmf-dist/tex/latex/base/utf8.def
-File: utf8.def 2015/09/07 v1.1p UTF-8 support for inputenc
-) [9]
-Overfull \hbox (0.54716pt too wide) in paragraph at lines 520--522
+Overfull \hbox (0.54716pt too wide) in paragraph at lines 477--479
 []\T1/ptm/m/n/10 Calculate sig-nal vari-able pro-por-tion based on sam-pled MCM
 C graphs af-ter burn-
  []
 
 No file Rd2.ind.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 531.
-[10]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 531.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 488.
+[9]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 488.
  (./Rd2.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 531.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 531.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 488.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 488.
 Package rerunfilecheck Info: File `Rd2.out' has not changed.
-(rerunfilecheck)             Checksum: E18F70050D61AC2735E64F29C679C484;786.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 531.
+(rerunfilecheck)             Checksum: 66FBB9E0488BD3F14B40ED9DBC550F48;698.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 488.
  ) 
 Here is how much of TeX's memory you used:
- 6437 strings out of 494415
- 91986 string characters out of 6172830
+ 6420 strings out of 494415
+ 91644 string characters out of 6172830
  169739 words of memory out of 5000000
- 9524 multiletter control sequences out of 15000+600000
+ 9522 multiletter control sequences out of 15000+600000
  36764 words of font info for 46 fonts, out of 8000000 for 9000
  452 hyphenation exceptions out of 8191
- 38i,5n,27p,237b,556s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 38i,5n,27p,237b,509s stack positions out of 5000i,500n,10000p,200000b,80000s
 
 !pdfTeX error: pdflatex.exe (file t1-zi4r-0): Font t1-zi4r-0 at 540 not found
  ==> Fatal error occurred, no output PDF file produced!

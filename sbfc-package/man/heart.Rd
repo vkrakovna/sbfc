@@ -3,7 +3,7 @@
 \docType{data}
 \name{heart}
 \alias{heart}
-\title{Heart disease outcomes given health attributes}
+\title{Heart disease data set: disease outcomes given health attributes}
 \format{\describe{
 \item{\code{TrainX}}{A matrix with 270 rows and 13 columns.}
 \item{\code{TrainY}}{A vector with 270 rows.}
