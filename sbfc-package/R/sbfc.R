@@ -131,6 +131,7 @@ average_sbfc_graph_edges = function(parents, cutoff=0.1, names=paste0("X", 1:nco
     freq = c(freq, freq_edge, freq_edge)
   }
   stopifnot(length(j1) == length(j2), length(j1) == length(freq))
+  if (length(j1) == 0) return(list(s="", edge_nodes=c()))
   freq_mat = sparseMatrix(i=j1, j=j2, x=freq)
   mat = cbind(freq_mat@i+1, rep(seq_along(diff(freq_mat@p)), diff(freq_mat@p)), freq_mat@x)
   s =""
@@ -203,9 +204,10 @@ sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, singl
   groups = sbfc_result$groups
   if (length(labels) != ncol(parents)) stop("Size of label vector must be equal to number of variables.")
   labels = gsub(" ", "\n", labels)
-  if (average)
-    gv_source = average_sbfc_graph(groups, parents, edge_cutoff, single_noise_nodes, labels, colorscheme, ncolors)
-  else 
+  if (average) {
+    rows = seq(sbfc_result$nstep/sbfc_result$burnin_denom + 1, sbfc_result$nstep, by=sbfc_result$thin)
+    gv_source = average_sbfc_graph(groups[rows,], parents[rows,], edge_cutoff, single_noise_nodes, labels, colorscheme, ncolors)
+  } else 
     gv_source = single_sbfc_graph(groups, parents, iter, single_noise_nodes, labels, colorscheme, ncolors)
   if (save_graphviz_code) writeLines(gv_source, "sbfc_graph_code.gv")
   if (is.null(width)) 

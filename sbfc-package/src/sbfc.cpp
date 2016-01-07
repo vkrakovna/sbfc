@@ -1277,7 +1277,7 @@ List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R
 	  _["groups"] = as<IntegerMatrix>(wrap(Outputs.Groups)),
 	  _["trees"] = as<IntegerMatrix>(wrap(Outputs.Trees)),
 	  _["logposterior"] = as<NumericVector>(wrap(Outputs.logpost)),
-	  _["nstep"] = nstep,
+	  _["nstep"] = Parameters.n_step,
 	  _["thin"] = thin,
 	  _["burnin_denom"] = burnin_denom,
 	  _["cv"] = cv,
