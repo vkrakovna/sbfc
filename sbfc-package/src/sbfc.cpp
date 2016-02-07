@@ -124,7 +124,7 @@ uvec Level(const svec &vals, const svec &cat) {
 	uvec indices(vals.n_elem, fill::zeros);
 	for(uword i=0; i < cat.n_elem; i++)
 		indices += (vals > cat(i));
-	assert (all(vals == cat(indices)));
+	//assert (all(vals == cat(indices)));
 	return indices;
 }
 
@@ -157,7 +157,7 @@ counts ComputeCounts(const data &Data, const parameters &Parameters, const nleve
 		count_y(y_level(i))++;
 	}
 	Counts.y = count_y;
-	assert(accu(Counts.y) == n_units); 
+	//assert(accu(Counts.y) == n_units); 
 
 	for (unsigned var1 = 0; var1 < n_var; var1++) {
 		uvec x1_level = Level(X.col(var1), cat(var1));
@@ -172,8 +172,8 @@ counts ComputeCounts(const data &Data, const parameters &Parameters, const nleve
 		}
 		Counts.var(var1) = count_var;
 		Counts.var_y(var1) = count_var_y;
-		assert(accu(Counts.var(var1)) == n_units);
-		assert(accu(Counts.var_y(var1)) == n_units);
+		//assert(accu(Counts.var(var1)) == n_units);
+		//assert(accu(Counts.var_y(var1)) == n_units);
 
 		for (unsigned var2 = var1+1; var2 < n_var; var2++) {
 			uvec x2_level = Level(X.col(var2), cat(var2));
@@ -188,9 +188,8 @@ counts ComputeCounts(const data &Data, const parameters &Parameters, const nleve
 			}
 			Counts.var_var(var1, var2) = count_var_var;
 			Counts.var_var_y(var1, var2) = count_var_var_y;
-			assert(accu(Counts.var_var(var1, var2)) == n_units);
-			assert(accu(Counts.var_var_y(var1, var2)) == n_units);
-
+			//assert(accu(Counts.var_var(var1, var2)) == n_units);
+			//assert(accu(Counts.var_var_y(var1, var2)) == n_units);
 		}
 	}
 	return Counts;
@@ -268,8 +267,8 @@ cube LogLik(const parameters &Parameters, const counts &Counts, const nlevels &n
 	for (unsigned var1 = 0; var1 < n_var; var1++) {
 		for (unsigned var2 = 0; var2 < n_var; var2++) {
 			for (unsigned group = 0; group <= 1; group++) {
-				assert(abs(loglik_matrix(var1, var2, group) - loglik_matrix(var2, var1, group) -
-				loglik_matrix(var1, var1, group) + loglik_matrix(var2, var2, group)) < cutoff_equal);
+				//assert(abs(loglik_matrix(var1, var2, group) - loglik_matrix(var2, var1, group) -
+				//loglik_matrix(var1, var1, group) + loglik_matrix(var2, var2, group)) < cutoff_equal);
 			}
 		}
 	}
@@ -303,7 +302,7 @@ double RandUnif() {
 }
 
 unsigned RandSample(const unsigned n_max) {
-	assert(n_max > 0);
+	//assert(n_max > 0);
 	return floor(runif(1, 0, n_max)[0]);
 }
 
@@ -319,7 +318,7 @@ uvec SampleWithoutReplacement(const svec &orig, const unsigned k) {
 }
 
 unsigned opp(const unsigned g) {
-	assert(g == noise || g == sig);
+	//assert(g == noise || g == sig);
 	if (g == noise) return sig;
 	return noise;
 }
@@ -330,7 +329,7 @@ vec normalize(const vec &logpost) {
 }
 
 unsigned Choose(const vec &logpost) {
-	assert(logpost.n_elem > 0);
+	//assert(logpost.n_elem > 0);
 	vec Ratio = exp(normalize(logpost));
 	double unif = RandUnif();
 	double s = 0;
@@ -356,17 +355,17 @@ void FindRootNode(const svec &Parent, const unsigned &node) {
 		if(next == null_value) break;
 		pos = next;
 		steps++;
-		assert(steps<1000); // Super-deep tree means we actually made a cycle
+		//assert(steps<1000); // Super-deep tree means we actually made a cycle
 	}
 }
 
 unsigned FindRootTree(const graph &Graph, const unsigned &tree_label) {
 	uvec tree_index_set = find(Graph.Tree == tree_label);
 	uvec root_index_set = find(Graph.Parent.elem(tree_index_set) == null_value);
-	assert(root_index_set.n_elem == 1);
+	//assert(root_index_set.n_elem == 1);
 	unsigned root = tree_index_set(root_index_set(0));
-	assert(Graph.Tree(root) == tree_label);
-	assert(Graph.Parent(root) == null_value);
+	//assert(Graph.Tree(root) == tree_label);
+	//assert(Graph.Parent(root) == null_value);
 	return root;
 }
 
@@ -400,11 +399,11 @@ double LogPostTree(const graph &Graph, const cube &logpost_matrix, const unsigne
 
 void MergeTreeLabels(svec &Tree, unsigned chosen_tree_label, unsigned top_tree_label) {
 	unsigned max_tree_label_old = max(Tree);
-	assert(top_tree_label != chosen_tree_label);
+	//assert(top_tree_label != chosen_tree_label);
 	Tree.elem(find(Tree == chosen_tree_label)).fill(top_tree_label);
 	uvec max_tree = find(Tree == max_tree_label_old);
 	Tree.elem(max_tree).fill(chosen_tree_label);
-	assert(max(Tree) == max_tree_label_old - 1);
+	//assert(max(Tree) == max_tree_label_old - 1);
 }
 
 void SplitTreeLabels(svec &Tree, const svec &Parent, unsigned node, unsigned tree_label) {
@@ -490,7 +489,7 @@ unsigned Switch(graph &Graph, const unsigned tree_label, const cube &logpost_mat
 	// returns whether the move was accepted
 	uvec chosen_tree = find(Graph.Tree == tree_label);
 	unsigned tree_size = chosen_tree.n_elem;
-	assert(tree_size > 0);
+	//assert(tree_size > 0);
 	unsigned tree_group = Graph.Group(chosen_tree(0));
 
 	double log_accept1 = min(0.0, LogPostDiffTree(Graph, logpost_matrix, tree_label));
@@ -554,7 +553,7 @@ void ReassignSubtreeChoose(const graph &Graph, const unsigned &chosen_node, cons
 	unsigned n_var = Parameters.n_var;
 	const svec &Tree = Graph.Tree;
 	const svec &Group = Graph.Group;
-	assert(Tree(chosen_node) == Tree(chosen_subtree(0)));
+	//assert(Tree(chosen_node) == Tree(chosen_subtree(0)));
 	unsigned chosen_tree_label = Tree(chosen_node);
 	unsigned chosen_tree_size = chosen_subtree.n_elem;
 
@@ -580,7 +579,7 @@ void ReassignSubtreeChoose(const graph &Graph, const unsigned &chosen_node, cons
 			}
 		}
 	}
-	assert(count == subset_size);
+	//assert(count == subset_size);
 
 	for(unsigned group=0; group<2; group++) {
 		logpost(count) = logpost_tree(group);
@@ -633,7 +632,7 @@ void ReassignSubtree(graph &Graph, const cube &logpost_matrix, const parameters 
 		ReassignSubtreeChoose(Graph2, chosen_node, chosen_subtree, parent_subset, logpost, logpost_matrix, Parameters);
 
 		uvec par_index_set = find(parent_subset == par1);
-		assert(par_index_set.n_elem > 0);
+		//assert(par_index_set.n_elem > 0);
 		unsigned par_index = 0;
 		if (par1 == null_value) par_index = group1;
 		double tp2 = normalize(logpost)(par_index_set(par_index));
@@ -677,7 +676,7 @@ graph InitGraph(const parameters &Parameters) {
 				unsigned parent = nodes(group_index_set(RandSample(group_size)));
 				Graph.Parent(node) = parent;
 				Graph.Tree(node) = Graph.Tree(parent);
-				assert(Graph.Group(parent) == group);
+				//assert(Graph.Group(parent) == group);
 			}
 		}
 
@@ -728,8 +727,8 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 	//unsigned n_step = Parameters.n_step;
 	unsigned n_burnin = Parameters.n_step / Parameters.burnin_denom;
 	
-	assert(Graphs.n_elem == Parameters.n_samples);
-	assert(logpost.n_elem == Parameters.n_samples);
+	//assert(Graphs.n_elem == Parameters.n_samples);
+	//assert(logpost.n_elem == Parameters.n_samples);
 	
 	//unsigned n_var = Parameters.n_var;
 	/*
@@ -787,7 +786,7 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 		move_times(2) += t3.time - t2.time + .001*(t3.millitm - t2.millitm);
 	}
 
-	assert(count == Parameters.n_samples);
+	//assert(count == Parameters.n_samples);
 	string suff = (Parameters.thin_output)?"":"_all";
 	Outputs.Parents += 1;
 	//Outputs.Parents.elem(find(Outputs.Parents == null_value + 1)).fill(0);
@@ -810,11 +809,11 @@ vec LogProbY(const graph &Graph, const counts &Counts, const data &Data, const n
 	uvec group1 = find(Graph.Group == sig);
 	unsigned n_units = Parameters.n_units;
 
-	assert(n_units > 0);
+	//assert(n_units > 0);
 	//assert(min(Counts.y) > 0);
 
 	vec logpost = log(to_vec(Counts.y)) - log(n_units);
-	assert(logpost.n_elem == n_levels.y);
+	//assert(logpost.n_elem == n_levels.y);
 
 	for (unsigned y_level = 0; y_level < n_levels.y; y_level++) {
 		for (unsigned j = 0; j < group1.n_elem; j++) {
@@ -832,7 +831,7 @@ vec LogProbY(const graph &Graph, const counts &Counts, const data &Data, const n
 				else count_edge = Counts.var_var_y(par, var)(par_level, var_level, y_level);
 				numer = count_edge + Counts.var(var)(var_level) * 1.0 / n_units;
 				denom = 1.0 + Counts.var_y(par)(par_level, y_level);
-				assert (denom > 0); 
+				//assert (denom > 0); 
 			}
 			if (numer > 0) logpost(y_level) += log(numer) - log(denom);
 		}
@@ -842,7 +841,7 @@ vec LogProbY(const graph &Graph, const counts &Counts, const data &Data, const n
 
 void Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n_levels, const field<svec> &cat, 
 	const svec &cat_y, const vec &logpost, const data &Data, const parameters &Parameters, outputs &Outputs) {
-	assert (Graphs.n_elem == logpost.n_elem);
+	//assert (Graphs.n_elem == logpost.n_elem);
 	unsigned n_test = Data.X_test.n_rows;
 	mat probs(n_test, n_levels.y);
 	probs.fill(0); 
@@ -858,7 +857,7 @@ void Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n
 	uvec max_index_set;
 	for (unsigned j = 0; j < n_test; j++) {
 		max_index_set = find(probs.row(j) == max(probs.row(j)));
-		assert(max_index_set.n_elem > 0); // is usually violated in case of infinity errors somewhere
+		//assert(max_index_set.n_elem > 0); // is usually violated in case of infinity errors somewhere
 		testclass(j) = cat_y(max_index_set(0));
 		probs.row(j) = probs.row(j) / sum(probs.row(j));
 	}
@@ -940,7 +939,7 @@ double CV_SBFC(const data &Data, const parameters &Parameters, outputs &Outputs)
 		} else {
 			train_subset = join_cols(row_shuffle.rows(0, fold_start-1), row_shuffle.rows(fold_end+1, n_units-1));
 		}
-		assert(cv_folds[i].test_subset.n_elem + train_subset.n_elem == n_units);
+		//assert(cv_folds[i].test_subset.n_elem + train_subset.n_elem == n_units);
 
 		cv_folds[i].Data.X_train = Data.X_train.rows(train_subset);
 		cv_folds[i].Data.X_test = Data.X_train.rows(cv_folds[i].test_subset);
@@ -985,7 +984,7 @@ double CV_SBFC(const data &Data, const parameters &Parameters, outputs &Outputs)
 		testclass.rows(cv_folds[i].test_subset) = cv_folds[i].Outputs.testclass;
 	}
 
-	assert(fold_start == n_units);
+	//assert(fold_start == n_units);
 	Outputs = cv_folds[0].Outputs;
 	Outputs.testclass = testclass;
 	//testclass.save(Parameters.output_id + "_Predictions.txt", csv_ascii);
@@ -1022,7 +1021,7 @@ void DataLoad(data &Data, string &path, string (&filenames)[4]) {
 	if (FileExists(path, filenames[0]) && FileExists(path, filenames[1])) {
 		Data.X_train.load(path + filenames[0]);
 		Data.Y_train.load(path + filenames[1]);
-		assert(Data.X_train.n_rows == Data.Y_train.n_rows);
+		//assert(Data.X_train.n_rows == Data.Y_train.n_rows);
 		cout << "training data loaded" << endl;
 	} else {
 		cout << "Please input the correct training data file names" << endl; 
@@ -1032,11 +1031,11 @@ void DataLoad(data &Data, string &path, string (&filenames)[4]) {
 	if (FileExists(path, filenames[2])) {
 		Data.X_test.load(path + filenames[2]);
 		cout << "test data loaded" << endl;
-		assert(Data.X_test.n_cols == Data.X_train.n_cols);
+		//assert(Data.X_test.n_cols == Data.X_train.n_cols);
 		Data.X = join_cols(Data.X_train, Data.X_test);
 		if (FileExists(path, filenames[3])) {
 			Data.Y_test.load(path + filenames[3]);
-			assert(Data.X_test.n_rows == Data.Y_test.n_rows);
+			//assert(Data.X_test.n_rows == Data.Y_test.n_rows);
 			Data.Y = join_cols(Data.Y_train, Data.Y_test);
 		} else {
 			Data.Y = Data.Y_train;
@@ -1050,7 +1049,7 @@ void DataLoad(data &Data, string &path, string (&filenames)[4]) {
 void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
 	Parameters.n_units = n_units;
 	if (Parameters.n_var == 0) Parameters.n_var = n_var;
-	assert(Parameters.n_var <= n_var);
+	//assert(Parameters.n_var <= n_var);
 	//if (Parameters.n_var >=1000) Parameters.thin_output = true;
 	if (Parameters.n_step == 0) Parameters.n_step = max((unsigned)10000, 10 * Parameters.n_var);
 	Parameters.n_rows = Parameters.thin_output?(Parameters.n_step/Parameters.thin):Parameters.n_step;
@@ -1228,19 +1227,19 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 	  if ((TYPEOF(TrainX) != INTSXP) || (TYPEOF(TrainY) != INTSXP)) Rf_error("Training data must be categorical with integer category labels.");
 		Data.X_train = as<smat>(TrainX);
 		Data.Y_train = as<svec>(TrainY);
-		assert(Data.X_train.n_rows == Data.Y_train.n_rows);
+		//assert(Data.X_train.n_rows == Data.Y_train.n_rows);
 	} else {
 		Rf_error("Please provide the training data.");
 	}
 	if (TestX != R_NilValue) {
 	  if (TYPEOF(TestX) != INTSXP) Rf_error("Test data must be categorical with integer category labels.");
 		Data.X_test = as<smat>(TestX);
-		assert(Data.X_test.n_cols == Data.X_train.n_cols);
+		//assert(Data.X_test.n_cols == Data.X_train.n_cols);
 		Data.X = join_cols(Data.X_train, Data.X_test);
 		if (TestY != R_NilValue) {
 		  if (TYPEOF(TestY) != INTSXP) Rf_error("Test data must be categorical with integer category labels.");
 			Data.Y_test = as<svec>(TestY);
-			assert(Data.X_test.n_rows == Data.Y_test.n_rows);
+			//assert(Data.X_test.n_rows == Data.Y_test.n_rows);
 			Data.Y = join_cols(Data.Y_train, Data.Y_test);
 		} else {
 			Data.Y = Data.Y_train;

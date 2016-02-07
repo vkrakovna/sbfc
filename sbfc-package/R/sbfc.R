@@ -98,17 +98,17 @@ single_sbfc_graph = function(groups, parents, i, single_noise_nodes=F,
   node [colorscheme=', colorscheme, ncolors, ' color=6, fontcolor=white, style=filled, fontname=Arial]; label="Group 1";')
   for (j in ncol(parents):1) {
     if(groups[i, j] == 1)
-      s = paste(s, names[j], ";")
+      s = paste(s, " \"", names[j], "\";")
     if(groups[i, j] == 1 && parents[i, j] != 0)
-      s = paste(s, names[parents[i, j]], "->", names[j], ";")
+      s = paste(s,  " \"", names[parents[i, j]], "\" -> \"", names[j], "\";")
   }
   s = paste0(s, '} subgraph cluster_g0 {
             node [colorscheme=', colorscheme, ncolors, ' color=2, style=filled, fontname=Arial]; label="Group 0";')
   for (j in ncol(parents):1) {
     if((groups[i, j] == 0) && single_noise_nodes)
-      s = paste(s, names[j], ";")
+      s = paste(s, " \"", names[j], "\";")
     if(groups[i, j] == 0 && parents[i, j] != 0)
-      s = paste(s, names[parents[i, j]], "->", names[j], ";")
+      s = paste(s,  " \"", names[parents[i, j]], "\" -> \"", names[j], "\";")
   }
   s = paste(s, "}}")
   s
@@ -278,19 +278,22 @@ signal_size_plot = function(sbfc_result, start=0, end=1, samples=F) {
 ##' @param nvars Number of top signal variables to include in the plot (default=10).
 ##' @param samples Calculate signal variable proportion based on sampled MCMC graphs after burn-in and thinning,
 ##' rather than graphs from all iterations (default=FALSE).
+##' @param labels A vector of node labels (default=\code{c("X1","X2",...)}).
 ##' @param label_size Size of variable labels on the X-axis (default=1).
+##' @param rotate_labels Rotate x-axis labels by 90 degrees to make them vertical (default=FALSE)
 ##' @description For each variable, computes the proportion of the samples in which this variable is in the signal group (Group 1). 
 ##' Plots the top \code{nvars} variables in decreasing order of signal proportion.
 ##' @return Signal proportion for the top \code{nvars} variables in decreasing order.
 ##' @export
-signal_var_proportion = function(sbfc_result, nvars=10, samples=F, label_size=1) {
+signal_var_proportion = function(sbfc_result, nvars=10, samples=F, 
+                                 labels=paste0("X", 1:ncol(sbfc_result$parents)), label_size=1, rotate_labels=F) {
   n = nrow(sbfc_result$groups)
   if (samples) rows = seq(n/sbfc_result$burnin_denom + 1, n, by=sbfc_result$thin)
   else rows = 1:n
   sig_prop = apply(sbfc_result$groups[rows,], 2, mean)
-  names(sig_prop) = paste0("X", 1:ncol(sbfc_result$groups))
+  names(sig_prop) = labels
   sort_prop = sort(sig_prop, decreasing=T)
-  barplot(sort_prop[1:nvars], cex.names = label_size, cex.lab=1.5, ylab="Group 1 proportion", xlab="Variable")
+  barplot(sort_prop[1:nvars], cex.names = label_size, cex.lab=1, ylab="Group 1 proportion", las=ifelse(rotate_labels, 3, 1))
   sort_prop[1:nvars]
 } 
 

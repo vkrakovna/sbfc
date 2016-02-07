@@ -5,7 +5,8 @@
 \title{Signal variable proportion}
 \usage{
 signal_var_proportion(sbfc_result, nvars = 10, samples = F,
-  label_size = 1)
+  labels = paste0("X", 1:ncol(sbfc_result$parents)), label_size = 1,
+  rotate_labels = F)
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}
@@ -15,7 +16,11 @@ signal_var_proportion(sbfc_result, nvars = 10, samples = F,
 \item{samples}{Calculate signal variable proportion based on sampled MCMC graphs after burn-in and thinning,
 rather than graphs from all iterations (default=FALSE).}
 
+\item{labels}{A vector of node labels (default=\code{c("X1","X2",...)}).}
+
 \item{label_size}{Size of variable labels on the X-axis (default=1).}
+
+\item{rotate_labels}{Rotate x-axis labels by 90 degrees to make them vertical (default=FALSE)}
 }
 \value{
 Signal proportion for the top \code{nvars} variables in decreasing order.
