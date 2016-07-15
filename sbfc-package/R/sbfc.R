@@ -3,6 +3,8 @@
 ##' @importFrom DiagrammeR grViz
 ##' @importFrom Matrix sparseMatrix
 ##' @importFrom discretization mdlp
+##' @importFrom graphics axis barplot plot
+##' @importFrom stats acf cor
 
 ##' @title Data set discretization and formatting
 ##' @description Removes rows containing missing data, and discretizes the data set using Minimum Description Length Partitioning (MDLP).

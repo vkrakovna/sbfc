@@ -1,14 +1,12 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadilloExtensions/sample.h>
 #include <armadillo>
-#include <iostream>
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
 #include <algorithm>
 #include <cassert>
 #include <sys/timeb.h>
-#include <sstream>
 #include <cmath>
 
 using namespace arma;
@@ -488,7 +486,7 @@ unsigned Switch(graph &Graph, const unsigned tree_label, const cube &logpost_mat
 	// switches a tree to the opposite group
 	// returns whether the move was accepted
 	uvec chosen_tree = find(Graph.Tree == tree_label);
-	unsigned tree_size = chosen_tree.n_elem;
+	//unsigned tree_size = chosen_tree.n_elem;
 	//assert(tree_size > 0);
 	unsigned tree_group = Graph.Group(chosen_tree(0));
 
@@ -1009,218 +1007,14 @@ double RunSBFC(const data &Data, parameters &Parameters, outputs &Outputs) {
 }
 
 ///// Initializing the SBFC algorithm
-
-bool FileExists(string &path, string &file_name) {
-	string fullpath = path + file_name;
-	const char* file_path = fullpath.c_str();
-	ifstream infile(file_path);
-	return infile;
-}
-
-void DataLoad(data &Data, string &path, string (&filenames)[4]) {
-	if (FileExists(path, filenames[0]) && FileExists(path, filenames[1])) {
-		Data.X_train.load(path + filenames[0]);
-		Data.Y_train.load(path + filenames[1]);
-		//assert(Data.X_train.n_rows == Data.Y_train.n_rows);
-		cout << "training data loaded" << endl;
-	} else {
-		cout << "Please input the correct training data file names" << endl; 
-		exit(0);
-	}
-
-	if (FileExists(path, filenames[2])) {
-		Data.X_test.load(path + filenames[2]);
-		cout << "test data loaded" << endl;
-		//assert(Data.X_test.n_cols == Data.X_train.n_cols);
-		Data.X = join_cols(Data.X_train, Data.X_test);
-		if (FileExists(path, filenames[3])) {
-			Data.Y_test.load(path + filenames[3]);
-			//assert(Data.X_test.n_rows == Data.Y_test.n_rows);
-			Data.Y = join_cols(Data.Y_train, Data.Y_test);
-		} else {
-			Data.Y = Data.Y_train;
-		}
-	} else {
-		Data.X = Data.X_train;
-		Data.Y = Data.Y_train;
-	}
-}
-
 void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
 	Parameters.n_units = n_units;
 	if (Parameters.n_var == 0) Parameters.n_var = n_var;
-	//assert(Parameters.n_var <= n_var);
-	//if (Parameters.n_var >=1000) Parameters.thin_output = true;
 	if (Parameters.n_step == 0) Parameters.n_step = max((unsigned)10000, 10 * Parameters.n_var);
 	Parameters.n_rows = Parameters.thin_output?(Parameters.n_step/Parameters.thin):Parameters.n_step;
 	Parameters.n_samples = (Parameters.n_step - Parameters.n_step/Parameters.burnin_denom) / Parameters.thin;
 	Parameters.scaling = log(Parameters.n_var);
 }
-
-void InitParam(int argc, char* argv[], data &Data, parameters &Parameters, string &output_id, 
-	ofstream &out_stream, bool &multichain) {
-	string filenames[4] = {"TrainX", "TrainY", "TestX", "TestY"};
-	string output_dir_suff, root_dir, id;
-	bool true_model = false;
-
-	// initializing parameters from user input
-	for (int i = 1; i < argc; i++) {
-		if(strcmp(argv[i], "-TrainX") == 0) {
-			filenames[0] = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-TrainY") == 0) {
-			filenames[1] = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-TestX") == 0) {
-			filenames[2] = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-TestY") == 0) {
-			filenames[3] = string(argv[i+1]);
-			i++;            
-		} else if(strcmp(argv[i], "-dir") == 0) { 
-			root_dir = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-outdirsuff") == 0) { 
-			// custom suffix for the name of output directory (will be created within the above directory)
-			output_dir_suff = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-id") == 0) { // data set id
-			id = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-alpha") == 0) { // Dirichlet hyperparameter value
-			Parameters.alpha = atof(argv[i+1]);
-			i++;   
-		} else if(strcmp(argv[i], "-edge") == 0) { // multiplier for x-edge penalty
-			Parameters.edge_mult = atof(argv[i+1]);
-			i++;        
-		} else if(strcmp(argv[i], "-yedge") == 0) { // multiplier for y-edge penalty
-			Parameters.yedge_mult = atof(argv[i+1]);
-			i++;               
-		} else if(strcmp(argv[i], "-k") == 0) { // number of repeats for the Switch move
-			Parameters.k = atof(argv[i+1]);
-			i++;            
-		} else if(strcmp(argv[i], "-nstep") == 0) { // total number of MCMC steps, including burnin
-			Parameters.n_step = atof(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-burninfrac") == 0) {
-			// (denominator of) fraction of total MCMC steps discarded as burnin 
-			Parameters.burnin_denom = atof(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-thin") == 0) { // thinning factor for MCMC samples
-			Parameters.thin = atof(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-start") == 0) { 
-			// starting graph for the algorithm (single noise nodes, random groups with single nodes, or random trees) 
-			Parameters.start = string(argv[i+1]);
-			i++;
-		} else if(strcmp(argv[i], "-thinoutput") == 0) { // whether to thin the output files
-			Parameters.thin_output = true;
-		} else if(strcmp(argv[i], "-truemodel") == 0) { 
-			// whether to compute the log posterior for true model (requires TrueModel file)
-			true_model = true;
-		} else if(strcmp(argv[i], "-multichain") == 0) { // whether to run multiple chains
-			multichain = true;
-		} else if(strcmp(argv[i], "-nvar") == 0) { // number of variables
-			Parameters.n_var = atof(argv[i+1]);
-			i++;        
-		} else if(strcmp(argv[i], "-thread") == 0) { // whether to run cross-validation with parallel threads
-			Parameters.thread = true;
-		}
-	}
-	if (id.empty()) {
-		cout << "Please input the data set id" << endl; 
-		exit(0);
-	}  
-	if (root_dir.empty()) root_dir = "";
-	string path = root_dir + id + "/";
-
-	DataLoad(Data, path, filenames);
-	if (true_model) Data.true_model.load(path + "TrueModel"); 
-	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);
-
-	// setting target directory
-	if (output_dir_suff.empty()) output_dir_suff = "";
-	ostringstream outdir_stream;
-	outdir_stream << "sbfc_nvar" << Parameters.n_var << '_' << Parameters.n_step/1000 << "k" << output_dir_suff;
-	string output_dir = outdir_stream.str();
-	output_id = path + output_dir + "/" + id + "_" + output_dir;
-	string command = "mkdir \"" + path + output_dir + "\" ";
-	system(command.c_str());
-
-	// outputting parameter values
-	string outfile = output_id + "_Output.txt";
-	out_stream.open(outfile.c_str(), ofstream::app);
-
-	out_stream  << output_dir << ": data set " << id << " with " << Parameters.n_var << " variables and " 
-				<< Parameters.n_units << " units" << endl;
-	cout        << output_dir << ": data set " << id << " with " << Parameters.n_var << " variables and " 
-				<< Parameters.n_units << " units" << endl;
-	out_stream  << Parameters.n_step << " total iterations, with 1/" << Parameters.burnin_denom
-				<< " burnin, thinning every " << Parameters.thin << endl;
-	cout        << Parameters.n_step << " total iterations, with 1/" << Parameters.burnin_denom
-				<< " burnin, thinning every " << Parameters.thin << endl;
-	out_stream  << "Edge penalty parameters: y-edge penalty multiplier=" << Parameters.yedge_mult 
-				<< ", x-edge penalty multiplier=" << Parameters.edge_mult << ", scaling factor = "
-				<< Parameters.scaling << endl;
-	cout        << "Edge penalty parameters: y-edge penalty multiplier=" << Parameters.yedge_mult
-				<< ", x-edge penalty multiplier=" << Parameters.edge_mult << ", scaling factor = "
-				<< Parameters.scaling << endl;
-	out_stream  << "Other parameters: alpha=" << Parameters.alpha << ", k=" << Parameters.k 
-				<< ", start=" << Parameters.start << endl;
-	cout        << "Other parameters: alpha=" << Parameters.alpha << ", k=" << Parameters.k 
-				<< ", start=" << Parameters.start << endl;
-}
-
-#ifndef TEST
-int main(int argc, char* argv[]) {
-	data Data;
-	parameters Parameters;
-	outputs Outputs;
-	string output_id;
-	ofstream out_stream;
-	bool multichain = false;
-
-	InitParam(argc, argv, Data, Parameters, output_id, out_stream, multichain);
-
-	timeb start, end;
-	ftime(&start);
-	vec accuracy(1);
-	if (multichain) {
-		for (int k = 0; k <= 4; k++) {
-			ostringstream chain_id_stream;
-			chain_id_stream << output_id << "_chain" << k+1;
-			Parameters.output_id = chain_id_stream.str();
-			accuracy.set_size(5);
-			accuracy(k) = RunSBFC(Data, Parameters, Outputs);
-
-			out_stream 	<< "Chain " << k+1 << " accuracy is " << accuracy(k) << endl;
-			cout 		<< "Chain " << k+1 << " accuracy is " << accuracy(k) << endl;
-		}
-	} else {
-		Parameters.output_id = output_id;
-		accuracy(0) = RunSBFC(Data, Parameters, Outputs);
-
-		out_stream 	<< "Accuracy: " << accuracy(0) << endl;
-		cout 		<< "Accuracy: " << accuracy(0) << endl;
-	}
-	accuracy.save(output_id + "_Accuracy.txt", csv_ascii);
-
-	ftime(&end);
-	int t = floor(end.time - start.time);
-	int hour, min, sec;
-	hour = t/3600; 
-	t = t%3600; 
-	min = t/60; 
-	t = t%60; 
-	sec = t; 
-
-	out_stream 	<< "Time: " << end.time - start.time << "s = (" << hour << ":" << min << ":" << sec << ")" << endl;
-	cout 		<< "Time: " << end.time - start.time << "s = (" << hour << ":" << min << ":" << sec << ")" << endl;
-
-	out_stream.close();
-	return 0;
-}
-#endif
 
 void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &TestY) {
 	if ((TrainX != R_NilValue) && (TrainY != R_NilValue)) {
