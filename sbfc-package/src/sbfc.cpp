@@ -5,7 +5,7 @@
 #include <time.h>
 #include <vector>
 #include <algorithm>
-#include <cassert>
+//#include <cassert>
 #include <sys/timeb.h>
 #include <cmath>
 
@@ -452,14 +452,14 @@ void SanityCheck(const graph &Graph) {
 		const svec &Group = Graph.Group;
 		const svec &Tree = Graph.Tree;
 		const svec &Parent = Graph.Parent;
-		assert(Group.n_elem == Tree.n_elem);
-		assert(Parent.n_elem == Tree.n_elem);
-		assert(max(Group) <= 1);
+		//assert(Group.n_elem == Tree.n_elem);
+		//assert(Parent.n_elem == Tree.n_elem);
+		//assert(max(Group) <= 1);
 
 		for (unsigned i = 0; i < Tree.n_elem; i++) {
 			if (Parent(i) != null_value) {
-				assert(Tree(i) == Tree(Parent(i)));
-				assert(Group(i) == Group(Parent(i)));
+			//	assert(Tree(i) == Tree(Parent(i)));
+			//	assert(Group(i) == Group(Parent(i)));
 			} 
 		}
 
@@ -469,7 +469,7 @@ void SanityCheck(const graph &Graph) {
 		svec treelabels = unique(Tree);
 		for(unsigned i = 0; i <= max(Tree); i++) 
 		{
-			assert(treelabels(i) == i);
+			//assert(treelabels(i) == i);
 			FindRootTree(Graph, treelabels(i));
 		}
 	#endif
@@ -477,7 +477,7 @@ void SanityCheck(const graph &Graph) {
 
 void DetailedBalanceCheck(const double &logpost1, const double &transprob1,
 	const double &logpost2, const double &transprob2) {
-	assert(abs(logpost1 + transprob1 - logpost2 - transprob2) < cutoff_equal);
+	//assert(abs(logpost1 + transprob1 - logpost2 - transprob2) < cutoff_equal);
 }
 
 ///// MCMC updates
@@ -507,7 +507,7 @@ unsigned Switch(graph &Graph, const unsigned tree_label, const cube &logpost_mat
 		#endif
 			return 1;
 	}
-	SanityCheck(Graph);
+	//SanityCheck(Graph);
 	return 0;
 }
 
@@ -519,7 +519,7 @@ unsigned SwitchRepeat(graph &Graph, const cube &logpost_matrix, const parameters
 	for(unsigned i=0; i<tree_index_set.n_elem; i++) {
 		count += Switch(Graph, tree_index_set(i), logpost_matrix, Parameters);
 	}
-	SanityCheck(Graph);
+	//SanityCheck(Graph);
 	return count;
 }
 
@@ -542,7 +542,7 @@ void Pivot(graph &Graph, const cube &logpost_matrix, const unsigned tree_label) 
 	}
 
 	Graph.Parent = newParent;
-	SanityCheck(Graph);
+	//SanityCheck(Graph);
 }
 
 void ReassignSubtreeChoose(const graph &Graph, const unsigned &chosen_node, const uvec &chosen_subtree, 
@@ -623,7 +623,7 @@ void ReassignSubtree(graph &Graph, const cube &logpost_matrix, const parameters 
 
 	#ifdef DEBUG
 		double logpost2 = LogPostProb(Graph, logpost_matrix, Parameters);
-		SanityCheck(Graph);
+		//SanityCheck(Graph);
 
 		graph Graph2 = Graph;
 		SplitSubtree(Graph2, chosen_node);
@@ -638,7 +638,7 @@ void ReassignSubtree(graph &Graph, const cube &logpost_matrix, const parameters 
 		DetailedBalanceCheck(logpost1, tp1, logpost2, tp2);
 	#endif
 
-	SanityCheck(Graph);
+	//SanityCheck(Graph);
 }
 
 ///// Constructing starting graphs for MCMC
@@ -688,7 +688,7 @@ graph InitGraph(const parameters &Parameters) {
 		}
 	}
 
-	SanityCheck(Graph);
+	//SanityCheck(Graph);
 	return Graph;
 }
 
@@ -709,7 +709,7 @@ graph TrueModelGraph(const imat &true_model, const unsigned n_var) {
 	trueGraph.Tree.rows(0, n_kernel-1) = trueTree;
 	if (n_kernel < n_var) trueGraph.Tree.rows(n_kernel, n_var-1) =
 		linspace<svec>(max_tree+1, n_var-n_kernel+max_tree, n_var-n_kernel);
-	SanityCheck(trueGraph);
+	//SanityCheck(trueGraph);
 	return trueGraph;
 }
 

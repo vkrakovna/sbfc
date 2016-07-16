@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/W32TeX) (preloaded format=pdflatex 2015.12.27)  15 JUL 2016 14:29
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/W32TeX) (preloaded format=pdflatex 2015.12.27)  16 JUL 2016 15:11
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -25,7 +25,7 @@ File: bk10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 \belowcaptionskip=\skip42
 \bibindent=\dimen102
 )
-(c:/PROGRA~1/R/R-32~1.3PA/share/texmf/tex/latex/Rd.sty
+(c:/PROGRA~1/R/R-devel/share/texmf/tex/latex/Rd.sty
 Package: Rd 
 
 (c:/texlive/2015/texmf-dist/tex/latex/base/ifthen.sty
@@ -181,7 +181,7 @@ l.276 ^^M
  
 Here is how much of TeX's memory you used:
  1343 strings out of 494415
- 15662 string characters out of 6172830
+ 15653 string characters out of 6172830
  60285 words of memory out of 5000000
  4683 multiletter control sequences out of 15000+600000
  4403 words of font info for 15 fonts, out of 8000000 for 9000
