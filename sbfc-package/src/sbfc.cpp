@@ -1045,7 +1045,8 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 }
 
 // [[Rcpp::export]]
-List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, int thin = 50, int burnin_denom = 5, bool cv = true, bool thinoutputs = false) {
+List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, 
+              int thin = 50, int burnin_denom = 5, bool cv = true, bool thinoutputs = false, double alpha = 5, double y_penalty = 1, double x_penalty = 4) {
   timeb start, end;
   ftime(&start);
 	data Data;
@@ -1055,6 +1056,9 @@ List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R
 	Parameters.thin_output = thinoutputs;
 	Parameters.thin = (unsigned)thin;
 	Parameters.burnin_denom = (unsigned)burnin_denom;
+	Parameters.alpha = alpha;
+	Parameters.yedge_mult = y_penalty;
+	Parameters.edge_mult = x_penalty;
 	if (nstep != R_NilValue) Parameters.n_step = as<unsigned>(nstep);
 	if (TestX != R_NilValue) Parameters.classify = true;
 	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);

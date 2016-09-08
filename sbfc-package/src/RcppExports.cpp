@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // sbfc_cpp
-List sbfc_cpp(SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY, SEXP nstep, int thin, int burnin_denom, bool cv, bool thinoutputs);
-RcppExport SEXP sbfc_sbfc_cpp(SEXP TrainXSEXP, SEXP TrainYSEXP, SEXP TestXSEXP, SEXP TestYSEXP, SEXP nstepSEXP, SEXP thinSEXP, SEXP burnin_denomSEXP, SEXP cvSEXP, SEXP thinoutputsSEXP) {
+List sbfc_cpp(SEXP TrainX, SEXP TrainY, SEXP TestX, SEXP TestY, SEXP nstep, int thin, int burnin_denom, bool cv, bool thinoutputs, double alpha, double y_penalty, double x_penalty);
+RcppExport SEXP sbfc_sbfc_cpp(SEXP TrainXSEXP, SEXP TrainYSEXP, SEXP TestXSEXP, SEXP TestYSEXP, SEXP nstepSEXP, SEXP thinSEXP, SEXP burnin_denomSEXP, SEXP cvSEXP, SEXP thinoutputsSEXP, SEXP alphaSEXP, SEXP y_penaltySEXP, SEXP x_penaltySEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -21,7 +21,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type burnin_denom(burnin_denomSEXP);
     Rcpp::traits::input_parameter< bool >::type cv(cvSEXP);
     Rcpp::traits::input_parameter< bool >::type thinoutputs(thinoutputsSEXP);
-    __result = Rcpp::wrap(sbfc_cpp(TrainX, TrainY, TestX, TestY, nstep, thin, burnin_denom, cv, thinoutputs));
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type y_penalty(y_penaltySEXP);
+    Rcpp::traits::input_parameter< double >::type x_penalty(x_penaltySEXP);
+    __result = Rcpp::wrap(sbfc_cpp(TrainX, TrainY, TestX, TestY, nstep, thin, burnin_denom, cv, thinoutputs, alpha, y_penalty, x_penalty));
     return __result;
 END_RCPP
 }

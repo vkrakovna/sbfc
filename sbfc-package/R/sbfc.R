@@ -58,6 +58,9 @@ data_disc = function(data, n_train = NULL, missing = '?') {
 ##' @param burnin_denom Denominator of the fraction of total MCMC steps discarded as burnin (default=5).
 ##' @param cv Do cross-validation on the training set (if test set is not provided).
 ##' @param thinoutputs Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).
+##' @param alpha Dirichlet hyperparameter(default=1)
+##' @param y_penalty Prior coefficient for y-edges, which penalizes signal group size (default=1)
+##' @param x_penalty Prior coefficient for x-edges, which penalizes tree size (default=4)
 ##' @details
 ##' Data needs to be discretized before running SBFC. \cr
 ##' If the test data matrix TestX is provided, SBFC runs on the entire training set TrainX, and provides predicted class labels for the test data. 
@@ -74,21 +77,22 @@ data_disc = function(data, n_train = NULL, missing = '?') {
   ##' \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
   ##' \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
   ##' \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
-  ##' \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
+  ##' \item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}, \code{alpha}, \code{y_penalty}, \code{x_penalty}.}
   ##' }
   ##' If \code{cv=TRUE}, the MCMC samples from the first fold are returned (\code{parents}, \code{groups}, \code{trees}, \code{logposterior}).
 ##' @examples
 ##' data(madelon)
 ##' madelon_result = sbfc(madelon)
 ##' data(heart)
-##' hearat_result = sbfc(heart, cv=FALSE)
+##' heart_result = sbfc(heart, cv=FALSE)
 ##' @export
-sbfc = function(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T, thinoutputs = F) {
+sbfc = function(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T, thinoutputs = F, 
+                alpha = 5, y_penalty = 1, x_penalty = 4) {
   sbfc_cpp(if (is.null(data$TrainX)) NULL else apply(as.matrix(data$TrainX), 2, as.integer), 
        if (is.null(data$TrainY)) NULL else as.integer(data$TrainY), 
        if (is.null(data$TestX)) NULL else apply(as.matrix(data$TestX), 2, as.integer), 
        if (is.null(data$TestY)) NULL else as.integer(data$TestY),
-       nstep, thin, burnin_denom, cv, thinoutputs)
+       nstep, thin, burnin_denom, cv, thinoutputs, alpha, y_penalty, x_penalty)
 }
 
 #### SBFC graphs ####
@@ -222,7 +226,7 @@ sbfc_graph = function(sbfc_result, iter=10000, average=T, edge_cutoff=0.1, singl
 # helper function for trace plots over MCMC iterations and autocorrelation plots
 iteration_plot = function(vector, ylabel, start=0, end=1, type="trace", acf_window=100, ...) {
   x = (start*length(vector)+1):(end*length(vector))
-  if (type=="trace") plot(x, vector[x], type='l', ylab=ylabel)
+  if (type=="trace") plot(x, vector[x], type='l', ylab=ylabel, xlab='Iterations')
   if (type=="acf") {
     acf(vector[x], acf_window, main="")
     axis(4, at=seq(0,1,by=.1))

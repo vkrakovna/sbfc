@@ -5,7 +5,7 @@
 \title{Selective Bayesian Forest Classifier (SBFC) algorithm}
 \usage{
 sbfc(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T,
-  thinoutputs = F)
+  thinoutputs = F, alpha = 5, y_penalty = 1, x_penalty = 4)
 }
 \arguments{
 \item{data}{Discretized data set:
@@ -25,6 +25,12 @@ sbfc(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T,
 \item{cv}{Do cross-validation on the training set (if test set is not provided).}
 
 \item{thinoutputs}{Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).}
+
+\item{alpha}{Dirichlet hyperparameter(default=1)}
+
+\item{y_penalty}{Prior coefficient for y-edges, which penalizes signal group size (default=1)}
+
+\item{x_penalty}{Prior coefficient for x-edges, which penalizes tree size (default=4)}
 }
 \value{
 An object of class \code{sbfc}:
@@ -37,7 +43,7 @@ An object of class \code{sbfc}:
 \item{\code{groups}}{Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).}
 \item{\code{trees}}{Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.}
 \item{\code{logposterior}}{Vector representing the log posterior at each iteration of the MCMC.}
-\item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}.}
+\item{Parameters}{\code{nstep}, \code{thin}, \code{burnin_denom}, \code{cv}, \code{thinoutputs}, \code{alpha}, \code{y_penalty}, \code{x_penalty}.}
 }
 If \code{cv=TRUE}, the MCMC samples from the first fold are returned (\code{parents}, \code{groups}, \code{trees}, \code{logposterior}).
 }
@@ -55,6 +61,6 @@ and returns predicted classes and accuracy for the training data. \cr
 data(madelon)
 madelon_result = sbfc(madelon)
 data(heart)
-hearat_result = sbfc(heart, cv=FALSE)
+heart_result = sbfc(heart, cv=FALSE)
 }
 

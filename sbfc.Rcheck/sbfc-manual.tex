@@ -16,7 +16,7 @@
 \item[Type]\AsIs{Package}
 \item[Title]\AsIs{Selective Bayesian Forest Classifier}
 \item[Version]\AsIs{1.0.1}
-\item[Date]\AsIs{2016-07-14}
+\item[Date]\AsIs{2016-07-16}
 \item[Author]\AsIs{Viktoriya Krakovna}
 \item[Maintainer]\AsIs{Viktoriya Krakovna }\email{vkrakovna@gmail.com}\AsIs{}
 \item[URL]\AsIs{}\url{http://github.com/vkrakovna/sbfc}\AsIs{}
@@ -51,7 +51,7 @@ Package: & sbfc\\{}
 Type: & Package\\{}
 Title: & Selective Bayesian Forest Classifier\\{}
 Version: & 1.0.1\\{}
-Date: & 2016-07-14\\{}
+Date: & 2016-07-16\\{}
 Author: & Viktoriya Krakovna\\{}
 Maintainer: & Viktoriya Krakovna <vkrakovna@gmail.com>\\{}
 URL: & http://github.com/vkrakovna/sbfc\\{}
@@ -331,7 +331,7 @@ Runs the SBFC algorithm on a discretized data set. To discretize your data, use 
 \begin{Usage}
 \begin{verbatim}
 sbfc(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T,
-  thinoutputs = F)
+  thinoutputs = F, alpha = 5, y_penalty = 1, x_penalty = 4)
 \end{verbatim}
 \end{Usage}
 %
@@ -357,6 +357,12 @@ sbfc(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T,
 \item[\code{cv}] Do cross-validation on the training set (if test set is not provided).
 
 \item[\code{thinoutputs}] Return thinned MCMC outputs (parents, groups, trees, logposterior), rather than all outputs (default=FALSE).
+
+\item[\code{alpha}] Dirichlet hyperparameter(default=1)
+
+\item[\code{y\_penalty}] Prior coefficient for y-edges, which penalizes signal group size (default=1)
+
+\item[\code{x\_penalty}] Prior coefficient for x-edges, which penalizes tree size (default=4)
 \end{ldescription}
 \end{Arguments}
 %
@@ -380,7 +386,7 @@ An object of class \code{sbfc}:
 \item[\code{groups}] Matrix representing the structures sampled by MCMC, where groups[i,j] indicates which group node j belongs to at iteration j (0 is noise, 1 is signal).
 \item[\code{trees}] Matrix representing the structures sampled by MCMC, where trees[i,j] indicates which tree node j belongs to at iteration j.
 \item[\code{logposterior}] Vector representing the log posterior at each iteration of the MCMC.
-\item[Parameters] \code{nstep}, \code{thin}, \code{burnin\_denom}, \code{cv}, \code{thinoutputs}.
+\item[Parameters] \code{nstep}, \code{thin}, \code{burnin\_denom}, \code{cv}, \code{thinoutputs}, \code{alpha}, \code{y\_penalty}, \code{x\_penalty}.
 
 \end{description}
 
@@ -392,7 +398,7 @@ If \code{cv=TRUE}, the MCMC samples from the first fold are returned (\code{pare
 data(madelon)
 madelon_result = sbfc(madelon)
 data(heart)
-hearat_result = sbfc(heart, cv=FALSE)
+heart_result = sbfc(heart, cv=FALSE)
 \end{ExampleCode}
 \end{Examples}
 \inputencoding{utf8}
