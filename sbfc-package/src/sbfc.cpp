@@ -6,7 +6,7 @@
 #include <vector>
 #include <algorithm>
 //#include <cassert>
-#include <sys/timeb.h>
+#include <sys/time.h>
 #include <cmath>
 
 using namespace arma;
@@ -18,7 +18,7 @@ using namespace Rcpp;
 #define to_smat conv_to<smat>::from
 
 const unsigned null_value = 65535;
-const double cutoff_equal = 1e-6;
+const double cutoff_equal = .001;
 
 typedef std::vector<unsigned> stdvec;
 typedef Cube<unsigned short> scube;
@@ -717,7 +717,7 @@ graph TrueModelGraph(const imat &true_model, const unsigned n_var) {
 
 void MCMC(field<graph> &Graphs, vec &logpost,
 	const data &Data, const cube &logpost_matrix, const parameters &Parameters, outputs &Outputs) {
-	timeb t0, t1, t2, t3;
+	timeval t0, t1, t2, t3;
 	vec move_times(5);
 	move_times.zeros();
 	//string output_id = Parameters.output_id;
@@ -749,11 +749,11 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 
 	unsigned count = 0, count1 = 0;
 	for(unsigned i = 0; i < Parameters.n_step; i++) {
-		ftime(&t0);
+		gettimeofday(&t0, NULL);
 		Outputs.switch_acc(i) = SwitchRepeat(Graph, logpost_matrix, Parameters);
-		ftime(&t1);
+		gettimeofday(&t1, NULL);
 		ReassignSubtree(Graph, logpost_matrix, Parameters);
-		ftime(&t2);
+		gettimeofday(&t2, NULL);
 		//Outputs.logpost_all(i) = LogPostProb(Graph, logpost_matrix, Parameters);
 
 		if (i % Parameters.thin == 0) {
@@ -777,11 +777,11 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 			Outputs.Parents.row(i) = Graph.Parent.t();
 			Outputs.logpost(i) = LogPostProb(Graph, logpost_matrix, Parameters);
 		}
-		ftime(&t3);
+		gettimeofday(&t3, NULL);
 
-		move_times(0) += t1.time - t0.time + .001*(t1.millitm - t0.millitm);
-		move_times(1) += t2.time - t1.time + .001*(t2.millitm - t1.millitm);
-		move_times(2) += t3.time - t2.time + .001*(t3.millitm - t2.millitm);
+		move_times(0) += t1.tv_sec - t0.tv_sec + 1e-6*(t1.tv_usec - t0.tv_usec);
+		move_times(1) += t2.tv_sec - t1.tv_sec + 1e-6*(t2.tv_usec - t1.tv_usec);
+		move_times(2) += t3.tv_sec - t2.tv_sec + 1e-6*(t3.tv_usec - t2.tv_usec);
 	}
 
 	//assert(count == Parameters.n_samples);
@@ -867,28 +867,28 @@ void Classify(const field<graph> &Graphs, const counts &Counts, const nlevels &n
 
 ///// Running the SBFC algorithm (with or without cross-validation)
 void SBFC(const data &Data, const parameters &Parameters, outputs &Outputs) {
-	timeb t1, t2, t3, t4, t5;
-	ftime(&t1);
+	timeval t1, t2, t3, t4, t5;
+	gettimeofday(&t1, NULL);
 	field<svec> cat = Categories(Data.X, Parameters.n_var);
 	svec cat_y = unique(Data.Y);
 	nlevels n_levels = ComputeLevels(Data, Parameters.n_var);
 	counts Counts = ComputeCounts(Data, Parameters, n_levels, cat, cat_y);
-	ftime(&t2);
+	gettimeofday(&t2, NULL);
 	cube logpost_matrix = LogLik(Parameters, Counts, n_levels);
 	LogPost(logpost_matrix, Parameters, n_levels);
-	ftime(&t3);
+	gettimeofday(&t3, NULL);
 	field<graph> Graphs(Parameters.n_samples);
 	vec logpost(Parameters.n_samples);
 	MCMC(Graphs, logpost, Data, logpost_matrix, Parameters, Outputs);
-	ftime(&t4);
+	gettimeofday(&t4, NULL);
 	if (Parameters.classify) Classify(Graphs, Counts, n_levels, cat, cat_y, logpost, Data, Parameters, Outputs);
-	ftime(&t5);
+	gettimeofday(&t5, NULL);
 	vec times(5);
-	times(0) = t2.time - t1.time;
-	times(1) = t3.time - t2.time;
-	times(2) = t4.time - t3.time;
-	times(3) = t5.time - t4.time;
-	times(4) = t5.time - t1.time;
+	times(0) = t2.tv_sec - t1.tv_sec;
+	times(1) = t3.tv_sec - t2.tv_sec;
+	times(2) = t4.tv_sec - t3.tv_sec;
+	times(3) = t5.tv_sec - t4.tv_sec;
+	times(4) = t5.tv_sec - t1.tv_sec;
 	Outputs.move_times = times;
 	//times.save(Parameters.output_id + "_Runtimes.txt", csv_ascii);
 	//return Outputs.testclass;
@@ -1047,8 +1047,8 @@ void DataImportR(data &Data, SEXP &TrainX, SEXP &TrainY, SEXP &TestX, SEXP &Test
 // [[Rcpp::export]]
 List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R_NilValue, SEXP TestY = R_NilValue, SEXP nstep = R_NilValue, 
               int thin = 50, int burnin_denom = 5, bool cv = true, bool thinoutputs = false, double alpha = 5, double y_penalty = 1, double x_penalty = 4) {
-  timeb start, end;
-  ftime(&start);
+  timeval start, end;
+  gettimeofday(&start, NULL);
 	data Data;
 	DataImportR(Data, TrainX, TrainY, TestX, TestY);
 	parameters Parameters;
@@ -1064,12 +1064,12 @@ List sbfc_cpp(SEXP TrainX = R_NilValue, SEXP TrainY = R_NilValue, SEXP TestX = R
 	SetParam(Parameters, Data.X_train.n_cols, Data.Y_train.n_elem);
 	outputs Outputs(Parameters.n_var, Parameters.n_rows, Parameters.n_step);
 	double accuracy = RunSBFC(Data, Parameters, Outputs);
-	ftime(&end);
+	gettimeofday(&end, NULL);
 	List results = List::create(
 	  _["accuracy"] = accuracy,
 	  _["predictions"] = as<IntegerVector>(wrap(Outputs.testclass)),
 	  _["probabilities"] = as<NumericMatrix>(wrap(Outputs.probs)),
-	  _["runtime"] = floor(end.time - start.time),
+	  _["runtime"] = floor(end.tv_sec - start.tv_sec),
 	  _["parents"] = as<IntegerMatrix>(wrap(Outputs.Parents)),
 	  _["groups"] = as<IntegerMatrix>(wrap(Outputs.Groups)),
 	  _["trees"] = as<IntegerMatrix>(wrap(Outputs.Trees)),
