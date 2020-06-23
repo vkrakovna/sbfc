@@ -4,10 +4,19 @@
 \alias{sbfc_graph}
 \title{SBFC graph}
 \usage{
-sbfc_graph(sbfc_result, iter = 10000, average = T, edge_cutoff = 0.1,
-  single_noise_nodes = F, labels = paste0("X", 1:ncol(sbfc_result$parents)),
-  save_graphviz_code = F, colorscheme = "blues", ncolors = 7,
-  width = NULL, height = NULL)
+sbfc_graph(
+  sbfc_result,
+  iter = 10000,
+  average = T,
+  edge_cutoff = 0.1,
+  single_noise_nodes = F,
+  labels = paste0("X", 1:ncol(sbfc_result$parents)),
+  save_graphviz_code = F,
+  colorscheme = "blues",
+  ncolors = 7,
+  width = NULL,
+  height = NULL
+)
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}
@@ -51,4 +60,3 @@ heart_labels = c("Age", "Sex", "Chest Pain", "Rest Blood Pressure", "Cholesterol
 "Fluoroscopy Colored Vessels", "Thalassemia")
 sbfc_graph(heart_result, labels=heart_labels, width=700)
 }
-

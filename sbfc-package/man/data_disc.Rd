@@ -29,4 +29,3 @@ Removes rows containing missing data, and discretizes the data set using Minimum
 data(iris)
 iris_disc = data_disc(iris)
 }
-

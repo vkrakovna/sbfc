@@ -18,4 +18,3 @@ edge_density_plot(sbfc_result, group, start = 0, end = 1)
 \description{
 Plots the edge density for the given group for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
 }
-

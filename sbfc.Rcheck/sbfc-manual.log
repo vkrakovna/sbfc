@@ -1,11 +1,10 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2020.5.28)  21 JUN 2020 17:31
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2020.5.28)  23 JUN 2020 14:30
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**sbfc-manual.tex
-(./sbfc-manual.tex
-LaTeX2e <2020-02-02> patch level 5
-L3 programming layer <2020-02-25>
+**\nonstopmode \input ./Rd2.tex \input ./Rd2.tex \input ./Rd2.tex \input ./Rd2.
+tex
+(./Rd2.tex
 (/usr/share/texlive/texmf-dist/tex/latex/base/book.cls
 Document Class: book 2019/12/20 v1.4l Standard LaTeX document class
 (/usr/share/texlive/texmf-dist/tex/latex/base/bk10.clo
@@ -24,7 +23,7 @@ File: bk10.clo 2019/12/20 v1.4l Standard LaTeX file (size option)
 \belowcaptionskip=\skip48
 \bibindent=\dimen134
 )
-(/usr/share/texmf/tex/latex/R/tex/latex/Rd.sty
+(/usr/share/R/share/texmf/tex/latex/Rd.sty
 Package: Rd 
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/ifthen.sty
@@ -251,17 +250,17 @@ Package: inputenc 2018/08/11 v1.3c Input encoding file
 File: latin1.def 2018/08/11 v1.3c Input encoding file
 ))
 \@indexfile=\write3
-\openout3 = `sbfc-manual.idx'.
+\openout3 = `Rd2.idx'.
 
 
-Writing index file sbfc-manual.idx
+Writing index file Rd2.idx
 (/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdfmode.def
 File: l3backend-pdfmode.def 2020-02-23 L3 backend support: PDF mode
 \l__kernel_color_stack_int=\count194
 \l__pdf_internal_box=\box49
 )
-No file sbfc-manual.aux.
-\openout1 = `sbfc-manual.aux'.
+(/tmp/RtmpIp1ULS/Rd2pdf19cf3293afc3b/Rd2.aux)
+\openout1 = `Rd2.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 8.
 LaTeX Font Info:    ... okay on input line 8.
@@ -280,6 +279,7 @@ LaTeX Font Info:    ... okay on input line 8.
 LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 8.
 LaTeX Font Info:    ... okay on input line 8.
 LaTeX Font Info:    Trying to load font information for T1+ptm on input line 8.
+
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1ptm.fd
 File: t1ptm.fd 2001/06/04 font definitions for T1/ptm.
@@ -314,8 +314,11 @@ Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 LaTeX Info: Redefining \ref on input line 8.
 LaTeX Info: Redefining \pageref on input line 8.
 LaTeX Info: Redefining \nameref on input line 8.
+
+(/tmp/RtmpIp1ULS/Rd2pdf19cf3293afc3b/Rd2.out)
+(/tmp/RtmpIp1ULS/Rd2pdf19cf3293afc3b/Rd2.out)
 \@outlinefile=\write4
-\openout4 = `sbfc-manual.out'.
+\openout4 = `Rd2.out'.
 
 LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 21
 .
@@ -329,7 +332,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <7> on input line 22.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 22.
-LaTeX Font Info:    Trying to load font information for T1+phv on input line 36
+LaTeX Font Info:    Trying to load font information for T1+phv on input line 35
 .
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1phv.fd
@@ -355,30 +358,30 @@ LaTeX Warning: Font shape declaration has incorrect series value `mc'.
                It should not contain an `m'! Please correct it.
                Found on input line 46.
 
-)
+) (/tmp/RtmpIp1ULS/Rd2pdf19cf3293afc3b/Rd2.toc [1
+
+
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}])
 \tf@toc=\write5
-\openout5 = `sbfc-manual.toc'.
+\openout5 = `Rd2.toc'.
 
  (/usr/share/texlive/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2019/11/14 v1.2k UTF-8 support for inputenc
 )
-Overfull \hbox (631.14297pt too wide) in alignment at lines 71--71
+Overfull \hbox (578.35364pt too wide) in alignment at lines 69--69
  [] [] 
  []
 
-[1
-
-
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
+[2]
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 9.0pt on input line 147.
+(Font)              scaled to size 9.0pt on input line 136.
  [3] [4] [5] [6]
-Underfull \hbox (badness 10000) in paragraph at lines 370--375
+Underfull \hbox (badness 10000) in paragraph at lines 347--352
 
  []
 
 
-Overfull \hbox (26.97804pt too wide) in paragraph at lines 393--394
+Overfull \hbox (26.97804pt too wide) in paragraph at lines 370--371
 []\T1/ptm/m/n/10 If \T1/zi4/m/n/10 cv=TRUE\T1/ptm/m/n/10 , the MCMC sam-ples fr
 om the first fold are re-turned (\T1/zi4/m/n/10 parents\T1/ptm/m/n/10 , \T1/zi4
 /m/n/10 groups\T1/ptm/m/n/10 , \T1/zi4/m/n/10 trees\T1/ptm/m/n/10 , \T1/zi4/m/n
@@ -386,48 +389,45 @@ om the first fold are re-turned (\T1/zi4/m/n/10 parents\T1/ptm/m/n/10 , \T1/zi4
  []
 
 [7] [8] [9]
-Overfull \hbox (0.54716pt too wide) in paragraph at lines 511--513
+Overfull \hbox (0.54716pt too wide) in paragraph at lines 502--504
 []\T1/ptm/m/n/10 Calculate sig-nal vari-able pro-por-tion based on sam-pled MCM
 C graphs af-ter burn-
  []
 
-No file sbfc-manual.ind.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 526.
-[10]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 526.
- (./sbfc-manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 526.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 526.
+(/tmp/RtmpIp1ULS/Rd2pdf19cf3293afc3b/Rd2.ind [10] [11
 
 
-Package rerunfilecheck Warning: File `sbfc-manual.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
+])
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 517.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 517.
 
-Package rerunfilecheck Info: Checksums for `sbfc-manual.out':
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  66FBB9E0488BD3F14B40ED9DBC550F48;698.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 526.
+(/tmp/RtmpIp1ULS/Rd2pdf19cf3293afc3b/Rd2.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 517.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 517.
+Package rerunfilecheck Info: File `Rd2.out' has not changed.
+(rerunfilecheck)             Checksum: 502B2374AC37F9F7583096F039E377D5;737.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 517.
  ) 
 Here is how much of TeX's memory you used:
- 6066 strings out of 482895
- 90669 string characters out of 5959405
- 349059 words of memory out of 5000000
- 21129 multiletter control sequences out of 15000+600000
- 565480 words of font info for 56 fonts, out of 8000000 for 9000
+ 6095 strings out of 482895
+ 91425 string characters out of 5959405
+ 348202 words of memory out of 5000000
+ 21143 multiletter control sequences out of 15000+600000
+ 569390 words of font info for 59 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 44i,5n,40p,243b,604s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 44i,5n,40p,308b,566s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/share/texliv
 e/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}</usr/share/texlive/texmf-
 dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/share/texlive/te
-xmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fon
-ts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/ti
-mes/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on sbfc-manual.pdf (10 pages, 96106 bytes).
+xmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-di
+st/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/ut
+mr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/
+share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on Rd2.pdf (11 pages, 106253 bytes).
 PDF statistics:
- 177 PDF objects out of 1000 (max. 8388607)
- 157 compressed objects within 2 object streams
- 80 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 247 PDF objects out of 1000 (max. 8388607)
+ 224 compressed objects within 3 object streams
+ 82 named destinations out of 1000 (max. 500000)
+ 97 words of extra memory for PDF output out of 10000 (max. 10000000)
 

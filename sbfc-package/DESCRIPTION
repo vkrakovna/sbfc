@@ -9,7 +9,7 @@ URL: http://github.com/vkrakovna/sbfc
 BugReports: http://github.com/vkrakovna/sbfc/issues
 Description: An MCMC algorithm for simultaneous feature selection and classification, 
     and visualization of the selected features and feature interactions. 
-    An implementation of SBFC by Krakovna, Du and Liu (2015), arXiv:1506.02371.
+    An implementation of SBFC by Krakovna, Du and Liu (2015), <arXiv:1506.02371>.
 License: GPL (>= 2)
 Depends: R (>= 2.10), DiagrammeR
 Imports:
@@ -17,5 +17,5 @@ Imports:
     Matrix,
     discretization
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 5.0.1
+RoxygenNote: 7.1.0
 LazyData: true

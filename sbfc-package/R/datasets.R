@@ -4,7 +4,7 @@
 #' @usage data(corral_augmented)
 #' @title Augmented corral data set: synthetic data with correlated attributes augmented with noise features
 #' @description This is an artificial domain where the target concept is (X1^X2) V (X3^X4). \cr
-#' Data set by R. Kohavi. Training and test splits from SGI. \cr
+#' Data set from John et al (1994). Training and test splits from SGI. \cr
 #' The first 6 features are the real features from the original corral data set.
 #' The rest are noise features added by V. Krakovna by shuffling copies of real features.\cr
 #' The SBFC paper uses subsets of this data set with the first 100 and 1000 features. 
@@ -16,8 +16,8 @@
 #'                                          TrainY = corral_augmented$TrainY))
 #' corral100_result = sbfc(data=list(TrainX=corral_augmented$TrainX[,1:100], 
 #'                                   TrainY = corral_augmented$TrainY))
-#' @references \href{http://www.sgi.com/tech/mlc/db/corral.names}{SGI listing for corral data set}
-#' @references \href{arxiv.org/abs/1506.02371}{SBFC paper describing augmentation of corral data set}
+#' @references \href{https://ai.stanford.edu/~ronnyk/ml94.pdf}{John et al (1994) paper introducing the corral data set}
+#' @references \href{https://arxiv.org/abs/1506.02371}{SBFC paper describing augmentation of corral data set}
 NULL
 
 #' @docType data
@@ -31,7 +31,6 @@ NULL
 #' \item{\code{TrainY}}{A vector with 270 rows.}
 #' }
 #' @references \href{https://archive.ics.uci.edu/ml/datasets/Statlog+(Heart)}{UCI heart data set}
-#' @references \href{http://www.sgi.com/tech/mlc/db/heart.names}{SGI listing for heart data set}
 NULL
 
 #' @docType data

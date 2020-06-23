@@ -4,8 +4,17 @@
 \alias{sbfc}
 \title{Selective Bayesian Forest Classifier (SBFC) algorithm}
 \usage{
-sbfc(data, nstep = NULL, thin = 50, burnin_denom = 5, cv = T,
-  thinoutputs = F, alpha = 5, y_penalty = 1, x_penalty = 4)
+sbfc(
+  data,
+  nstep = NULL,
+  thin = 50,
+  burnin_denom = 5,
+  cv = T,
+  thinoutputs = F,
+  alpha = 5,
+  y_penalty = 1,
+  x_penalty = 4
+)
 }
 \arguments{
 \item{data}{Discretized data set:
@@ -63,4 +72,3 @@ madelon_result = sbfc(madelon)
 data(heart)
 heart_result = sbfc(heart, cv=FALSE)
 }
-

@@ -19,4 +19,3 @@ rather than graphs from all iterations (default=FALSE).}
 \description{
 Plots the Group 1 size for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
 }
-

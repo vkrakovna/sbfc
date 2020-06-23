@@ -4,9 +4,14 @@
 \alias{signal_var_proportion}
 \title{Signal variable proportion}
 \usage{
-signal_var_proportion(sbfc_result, nvars = 10, samples = F,
-  labels = paste0("X", 1:ncol(sbfc_result$parents)), label_size = 1,
-  rotate_labels = F)
+signal_var_proportion(
+  sbfc_result,
+  nvars = 10,
+  samples = F,
+  labels = paste0("X", 1:ncol(sbfc_result$parents)),
+  label_size = 1,
+  rotate_labels = F
+)
 }
 \arguments{
 \item{sbfc_result}{An object of class \code{sbfc}.}
@@ -29,4 +34,3 @@ Signal proportion for the top \code{nvars} variables in decreasing order.
 For each variable, computes the proportion of the samples in which this variable is in the signal group (Group 1). 
 Plots the top \code{nvars} variables in decreasing order of signal proportion.
 }
-

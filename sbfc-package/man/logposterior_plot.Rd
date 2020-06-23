@@ -18,4 +18,3 @@ logposterior_plot(sbfc_result, start = 0, end = 1, type = "trace")
 \description{
 Plots the log posterior for a range of the MCMC iterations (indicated by \code{start} and \code{end}).
 }
-
