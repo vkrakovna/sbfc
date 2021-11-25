@@ -10,7 +10,7 @@
 #include <cmath>
 
 using namespace arma;
-using namespace std;
+//using namespace std;
 using namespace Rcpp;
 #define to_vec conv_to<vec>::from
 #define to_svec conv_to<svec>::from
@@ -81,8 +81,8 @@ struct parameters {
 	unsigned n_samples; // number of MCMC samples
 	bool thin_output; // whether to output only the thinned samples or all samples from the MCMC
 	unsigned n_folds; // number of cross-validation folds
-	string start; // starting graph for the algorithm (single noise nodes, random groups with single nodes, or random trees)
-	string output_id; // name of output directory
+        std::string start; // starting graph for the algorithm (single noise nodes, random groups with single nodes, or random trees)
+	std::string output_id; // name of output directory
 	bool thread; // whether to run cross-validation with parallel threads
 	bool classify; // whether to run classification
 
@@ -291,7 +291,7 @@ void LogPost(cube &logpost_matrix, const parameters &Parameters, const nlevels &
 ///// Helper functions for performing the MCMC updates
 
 double logsumexp(const vec &logpost) {
-	double mlogpost = max(logpost);
+	double mlogpost = arma::max(logpost);
 	return log(sum(exp(logpost - mlogpost))) + mlogpost;
 }
 
@@ -322,7 +322,7 @@ unsigned opp(const unsigned g) {
 }
 
 vec normalize(const vec &logpost) {
-	double mlogpost = max(logpost);
+	double mlogpost = arma::max(logpost);
 	return (logpost - mlogpost) - logsumexp(logpost - mlogpost);
 }
 
@@ -396,7 +396,7 @@ double LogPostTree(const graph &Graph, const cube &logpost_matrix, const unsigne
 }
 
 void MergeTreeLabels(svec &Tree, unsigned chosen_tree_label, unsigned top_tree_label) {
-	unsigned max_tree_label_old = max(Tree);
+	unsigned max_tree_label_old = arma::max(Tree);
 	//assert(top_tree_label != chosen_tree_label);
 	Tree.elem(find(Tree == chosen_tree_label)).fill(top_tree_label);
 	uvec max_tree = find(Tree == max_tree_label_old);
@@ -490,7 +490,7 @@ unsigned Switch(graph &Graph, const unsigned tree_label, const cube &logpost_mat
 	//assert(tree_size > 0);
 	unsigned tree_group = Graph.Group(chosen_tree(0));
 
-	double log_accept1 = min(0.0, LogPostDiffTree(Graph, logpost_matrix, tree_label));
+	double log_accept1 = std::min(0.0, LogPostDiffTree(Graph, logpost_matrix, tree_label));
 	double log_unif = log(RandUnif());
 
 	if(log_unif < log_accept1) {
@@ -502,7 +502,7 @@ unsigned Switch(graph &Graph, const unsigned tree_label, const cube &logpost_mat
 
 		#ifdef DEBUG
 			double logpost2 = LogPostProb(Graph, logpost_matrix, Parameters);
-			double log_accept2 = min(0.0, LogPostDiffTree(Graph, logpost_matrix, tree_label));
+			double log_accept2 = std::min(0.0, LogPostDiffTree(Graph, logpost_matrix, tree_label));
 			DetailedBalanceCheck(logpost1, log_accept1, logpost2, log_accept2);
 		#endif
 			return 1;
@@ -514,7 +514,7 @@ unsigned Switch(graph &Graph, const unsigned tree_label, const cube &logpost_mat
 unsigned SwitchRepeat(graph &Graph, const cube &logpost_matrix, const parameters &Parameters) {
 	// proposes to switch each of a set of trees to the opposite group
 	unsigned num_trees = max(Graph.Tree)+1;
-	uvec tree_index_set = SampleWithoutReplacement(Graph.Tree, min(Parameters.k, num_trees));
+	uvec tree_index_set = SampleWithoutReplacement(Graph.Tree, std::min(Parameters.k, num_trees));
 	unsigned count = 0;
 	for(unsigned i=0; i<tree_index_set.n_elem; i++) {
 		count += Switch(Graph, tree_index_set(i), logpost_matrix, Parameters);
@@ -785,7 +785,7 @@ void MCMC(field<graph> &Graphs, vec &logpost,
 	}
 
 	//assert(count == Parameters.n_samples);
-	string suff = (Parameters.thin_output)?"":"_all";
+	std::string suff = (Parameters.thin_output)?"":"_all";
 	Outputs.Parents += 1;
 	//Outputs.Parents.elem(find(Outputs.Parents == null_value + 1)).fill(0);
 	/*
@@ -916,7 +916,7 @@ double CV_SBFC(const data &Data, const parameters &Parameters, outputs &Outputs)
 	uvec row_shuffle = RandShuffle(n_units);
 	svec testclass(n_units);
 
-	vector<cv_fold> cv_folds(n_folds);
+	std::vector<cv_fold> cv_folds(n_folds);
 	/*
 	vector<pthread_t> threads(n_folds);
 	pthread_attr_t attr;
@@ -950,7 +950,7 @@ double CV_SBFC(const data &Data, const parameters &Parameters, outputs &Outputs)
 		cv_folds[i].Parameters.n_units = train_subset.n_elem;
 		cv_folds[i].Outputs = Outputs;
 		
-		ostringstream fold_id_stream;
+		std::ostringstream fold_id_stream;
 		fold_id_stream << Parameters.output_id << "_" << (i+1);
 		cv_folds[i].Parameters.output_id = fold_id_stream.str();
 
@@ -1010,7 +1010,7 @@ double RunSBFC(const data &Data, parameters &Parameters, outputs &Outputs) {
 void SetParam(parameters &Parameters, unsigned n_var, unsigned n_units) {
 	Parameters.n_units = n_units;
 	if (Parameters.n_var == 0) Parameters.n_var = n_var;
-	if (Parameters.n_step == 0) Parameters.n_step = max((unsigned)10000, 10 * Parameters.n_var);
+	if (Parameters.n_step == 0) Parameters.n_step = std::max((unsigned)10000, 10 * Parameters.n_var);
 	Parameters.n_rows = Parameters.thin_output?(Parameters.n_step/Parameters.thin):Parameters.n_step;
 	Parameters.n_samples = (Parameters.n_step - Parameters.n_step/Parameters.burnin_denom) / Parameters.thin;
 	Parameters.scaling = log(Parameters.n_var);
